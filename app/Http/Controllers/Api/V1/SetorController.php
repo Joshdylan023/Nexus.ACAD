@@ -25,6 +25,7 @@ class SetorController extends Controller
 
         return response()->json($query->get());
     }
+
     /**
      * Armazena um novo Setor.
      */
@@ -35,6 +36,7 @@ class SetorController extends Controller
             'sigla' => 'nullable|string|max:20',
             'tipo' => ['required', Rule::in(['Corporativo', 'Institucional', 'Operacional'])]
         ]);
+        
         $setor = Setor::create($validatedData);
 
         return response()->json(['message' => 'Setor criado com sucesso!', 'data' => $setor], 201);
@@ -45,7 +47,7 @@ class SetorController extends Controller
      */
     public function show(Setor $setor): JsonResponse
     {
-        return response()->json($setor->load(['campus', 'gestor', 'pai', 'filhos']));
+        return response()->json($setor);
     }
 
     /**
@@ -58,9 +60,10 @@ class SetorController extends Controller
             'sigla' => 'nullable|string|max:20',
             'tipo' => ['required', Rule::in(['Corporativo', 'Institucional', 'Operacional'])]
         ]);
+        
         $setor->update($validatedData);
 
-        return response()->json(['message' => 'Setor atualizado com sucesso!', 'data' => $setor->load(['campus', 'gestor', 'pai'])]);
+        return response()->json(['message' => 'Setor atualizado com sucesso!', 'data' => $setor]);
     }
 
     /**

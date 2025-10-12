@@ -4,68 +4,120 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
+use App\Models\SetorVinculo;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class CampusSetorController extends Controller
 {
-    // Lista os setores vinculados a um campus específico
     public function index(Campus $campus): JsonResponse
     {
-        // Usamos a relação direta com SetorVinculo para ter mais controle
-        $vinculos = $campus->setorVinculos()->with(['setor', 'gestor', 'pai.setor'])->get();
+        try {
+            Log::info('Buscando setores para campus ID: ' . $campus->id);
+            
+            $vinculos = SetorVinculo::where('vinculavel_type', 'campus')
+                ->where('vinculavel_id', $campus->id)
+                ->with(['setor', 'gestor'])
+                ->get();
 
-        $setores = $vinculos->map(function ($vinculo) {
-            $setor = $vinculo->setor;
-            if ($setor) {
-                $setor->pivot = $vinculo->toArray();
-            }
-            return $setor;
-        })->filter();
-        return response()->json($setores);
+            Log::info('Vínculos encontrados: ' . $vinculos->count());
+
+            $vinculosFormatados = $vinculos->map(function ($vinculo) {
+                if (!$vinculo->setor) {
+                    Log::warning('Vínculo sem setor: ' . $vinculo->id);
+                    return null;
+                }
+
+                return [
+                    'id' => $vinculo->id,
+                    'setor_id' => $vinculo->setor_id,
+                    'gestor_id' => $vinculo->gestor_id,
+                    'status' => $vinculo->status,
+                    'centro_custo_sap' => $vinculo->centro_custo_sap,
+                    'centro_resultado_sap' => $vinculo->centro_resultado_sap,
+                    'requer_portaria_nomeacao_gestor' => $vinculo->requer_portaria_nomeacao_gestor,
+                    'setor_pai_id' => $vinculo->pai_id,
+                    'setor' => $vinculo->setor,
+                    'gestor' => $vinculo->gestor,
+                ];
+            })->filter()->values();
+
+            return response()->json($vinculosFormatados);
+            
+        } catch (\Exception $e) {
+            Log::error('Erro em CampusSetorController@index: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'error' => 'Erro ao buscar setores',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // Vincula um ou mais setores a um campus
     public function store(Request $request, Campus $campus): JsonResponse
     {
         $data = $request->validate([
             'setor_id' => 'required|exists:setores,id',
             'gestor_id' => 'nullable|exists:users,id',
             'status' => ['required', Rule::in(['Ativo', 'Inativo', 'Em Desativação', 'Em Implantação'])],
-            // Adicionar outras validações se necessário (SAP, etc.)
+            'centro_custo_sap' => 'nullable|string|max:50',
+            'centro_resultado_sap' => 'nullable|string|max:50',
+            'requer_portaria_nomeacao_gestor' => 'nullable|boolean',
+            'setor_pai_id' => 'nullable|exists:setor_vinculos,id',
         ]);
 
-        // O segundo argumento do attach() são os dados extras da tabela-pivô
-        $campus->setores()->attach($data['setor_id'], [
+        SetorVinculo::create([
+            'setor_id' => $data['setor_id'],
+            'vinculavel_type' => 'campus',
+            'vinculavel_id' => $campus->id,
             'gestor_id' => $data['gestor_id'] ?? null,
             'status' => $data['status'],
+            'centro_custo_sap' => $data['centro_custo_sap'] ?? null,
+            'centro_resultado_sap' => $data['centro_resultado_sap'] ?? null,
+            'requer_portaria_nomeacao_gestor' => $data['requer_portaria_nomeacao_gestor'] ?? false,
+            'pai_id' => $data['setor_pai_id'] ?? null,
         ]);
 
         return response()->json(['message' => 'Setor vinculado com sucesso!'], 201);
     }
 
-    // Atualiza os dados de um vínculo existente
-    public function update(Request $request, Campus $campus, Setor $setor): JsonResponse
+    public function update(Request $request, Campus $campus, $setorId): JsonResponse
     {
         $data = $request->validate([
             'gestor_id' => 'nullable|exists:users,id',
             'status' => ['required', Rule::in(['Ativo', 'Inativo', 'Em Desativação', 'Em Implantação'])],
+            'centro_custo_sap' => 'nullable|string|max:50',
+            'centro_resultado_sap' => 'nullable|string|max:50',
+            'requer_portaria_nomeacao_gestor' => 'nullable|boolean',
+            'setor_pai_id' => 'nullable|exists:setor_vinculos,id',
         ]);
 
-        // updateExistingPivot() atualiza os dados da tabela-pivô
-        $campus->setores()->updateExistingPivot($setor->id, [
+        $vinculo = SetorVinculo::where('id', $setorId)
+            ->where('vinculavel_type', 'campus')
+            ->where('vinculavel_id', $campus->id)
+            ->firstOrFail();
+
+        $vinculo->update([
             'gestor_id' => $data['gestor_id'] ?? null,
             'status' => $data['status'],
+            'centro_custo_sap' => $data['centro_custo_sap'] ?? null,
+            'centro_resultado_sap' => $data['centro_resultado_sap'] ?? null,
+            'requer_portaria_nomeacao_gestor' => $data['requer_portaria_nomeacao_gestor'] ?? false,
+            'pai_id' => $data['setor_pai_id'] ?? null,
         ]);
 
         return response()->json(['message' => 'Vínculo do setor atualizado!']);
     }
 
-    // Desvincula um setor de um campus
-    public function destroy(Campus $campus, Setor $setor): JsonResponse
+    public function destroy(Campus $campus, $setorId): JsonResponse
     {
-        $campus->setores()->detach($setor->id);
+        SetorVinculo::where('id', $setorId)
+            ->where('vinculavel_type', 'campus')
+            ->where('vinculavel_id', $campus->id)
+            ->delete();
+
         return response()->json(null, 204);
     }
 }

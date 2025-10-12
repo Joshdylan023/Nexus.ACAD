@@ -12,7 +12,7 @@ class GrupoEducacionalController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(GrupoEducacional::all());
+        return response()->json(GrupoEducacional::orderBy('nome')->get());
     }
 
     public function store(Request $request): JsonResponse
@@ -20,8 +20,10 @@ class GrupoEducacionalController extends Controller
         $validatedData = $request->validate([
             'nome' => 'required|string|unique:grupos_educacionais|max:255',
             'cnpj' => 'nullable|string|unique:grupos_educacionais,cnpj|max:18',
+            'endereco_completo' => 'nullable|string',  // ← ADICIONADO
             'representante_legal' => 'nullable|string|max:255',
         ]);
+        
         $grupo = GrupoEducacional::create($validatedData);
         return response()->json(['message' => 'Grupo Educacional criado com sucesso!', 'data' => $grupo], 201);
     }
@@ -36,8 +38,10 @@ class GrupoEducacionalController extends Controller
         $validatedData = $request->validate([
             'nome' => ['required', 'string', Rule::unique('grupos_educacionais')->ignore($grupo->id), 'max:255'],
             'cnpj' => ['nullable', 'string', Rule::unique('grupos_educacionais')->ignore($grupo->id), 'max:18'],
+            'endereco_completo' => 'nullable|string',  // ← ADICIONADO
             'representante_legal' => 'nullable|string|max:255',
         ]);
+        
         $grupo->update($validatedData);
         return response()->json(['message' => 'Grupo Educacional atualizado com sucesso!', 'data' => $grupo]);
     }

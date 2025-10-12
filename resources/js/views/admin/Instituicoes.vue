@@ -1,11 +1,21 @@
 <template>
   <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="text-white">Gestão de Instituições de Ensino (IES)</h2>
-      <button v-if="!showForm" @click="showCreateForm" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i> Nova IES
-      </button>
-    </div>
+    <PageHeader 
+      title="Gestão de Instituições de Ensino (IES)"
+      :breadcrumbs="[
+        { label: 'Estrutura Organizacional' },
+        { label: 'Instituições' }
+      ]"
+      :show-search="!showForm"
+      search-placeholder="Buscar por nome, CNPJ ou código e-MEC..."
+      v-model="buscaRapida"
+    >
+      <template #actions>
+        <button v-if="!showForm" @click="showCreateForm" class="btn btn-success">
+          <i class="bi bi-plus-lg"></i> Nova IES
+        </button>
+      </template>
+    </PageHeader>
     
     <div v-if="showForm" class="card card-glass mb-4">
       <div class="card-header">{{ isEditing ? 'Editar IES Existente' : 'Adicionar Nova IES' }}</div>
@@ -48,18 +58,18 @@
              <div class="col-md-6 mb-3">
                 <label class="form-label">Reitor / Diretor Geral (Opcional)</label>
                 <v-select
-                    label="name"
+                    :get-option-label="option => option.usuario ? option.usuario.name : option.name"
                     :options="reitorOptions"
                     @search="fetchUsers"
                     v-model="selectedReitor"
                     placeholder="Digite a matrícula ou nome..."
                 >
-                    <template #option="{ name, matricula_funcional }">
-                        {{ name }}<br>
-                        <small class="text-muted">Matrícula: {{ matricula_funcional }}</small>
+                    <template #option="option">
+                        {{ option.usuario ? option.usuario.name : option.name }}<br>
+                        <small class="text-muted" v-if="option.matricula_funcional">Matrícula: {{ option.matricula_funcional }}</small>
                     </template>
-                    <template #selected-option="{ name }">
-                        <div>{{ name }}</div>
+                    <template #selected-option="option">
+                        <div>{{ option.usuario ? option.usuario.name : option.name }}</div>
                     </template>
                 </v-select>
             </div>
@@ -102,36 +112,53 @@
                   <th class="text-center">Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr v-if="loading"><td colspan="6" class="text-center">A carregar...</td></tr>
-                <tr v-for="instituicao in instituicoes" :key="instituicao.id">
+            <TableSkeleton v-if="loading" :columns="6" :rows="5" />
+            <tbody v-else>
+                <tr v-for="instituicao in instituicoesFiltradas" :key="instituicao.id">
                   <td class="ps-4">{{ instituicao.nome_fantasia }}</td>
                   <td>{{ instituicao.codigo_emec || 'N/A' }}</td>
                   <td>{{ instituicao.mantenedora ? instituicao.mantenedora.razao_social : 'N/A' }}</td>
                   <td>{{ instituicao.reitor ? instituicao.reitor.name : 'A definir' }}</td>
-                  <td><span class="badge" :class="getStatusClass(instituicao.status)">{{ instituicao.status }}</span></td>
+                  <td><StatusBadge :status="instituicao.status" /></td>
                   <td class="text-center">
                       <button @click="showEditForm(instituicao)" class="btn btn-sm btn-primary me-2" title="Editar IES"><i class="bi bi-pencil"></i></button>
-                      <button @click="deleteInstituicao(instituicao.id)" class="btn btn-sm btn-danger me-2" title="Excluir IES"><i class="bi bi-trash"></i></button>
-                      <router-link :to="{ name: 'admin.institucional.atos', params: { id: instituicao.id } }" class="btn btn-sm btn-info me-2" title="Gerir Atos Regulatórios"><i class="bi bi-file-earmark-text"></i></router-link>
-                      <router-link :to="{ name: 'admin.institucional.instituicao.setores', params: { id: instituicao.id } }" class="btn btn-sm btn-secondary" title="Gerir Setores"><i class="bi bi-diagram-3"></i></router-link>
+                      <button @click="prepareDelete(instituicao)" class="btn btn-sm btn-danger me-2" title="Excluir IES"><i class="bi bi-trash"></i></button>
+                      <router-link :to="`/admin/institucional/instituicoes/${instituicao.id}/atos-regulatorios`" class="btn btn-sm btn-info me-2" title="Gerir Atos Regulatórios"><i class="bi bi-file-earmark-text"></i></router-link>
+                      <router-link :to="`/admin/institucional/instituicoes/${instituicao.id}/setores`" class="btn btn-sm btn-secondary" title="Gerir Setores"><i class="bi bi-diagram-3"></i></router-link>
                   </td>
                 </tr>
-                 <tr v-if="!loading && instituicoes.length === 0">
-                    <td colspan="6" class="text-center text-muted">Nenhuma instituição encontrada.</td>
+                 <tr v-if="instituicoesFiltradas.length === 0">
+                    <td colspan="6" class="text-center text-muted py-4">
+                      {{ buscaRapida ? 'Nenhum resultado encontrado para sua busca.' : 'Nenhuma instituição encontrada.' }}
+                    </td>
                 </tr>
             </tbody>
             </table>
       </div>
     </div>
+
+    <!-- Modal de Confirmação -->
+    <ConfirmModal
+      id="confirmDeleteModal"
+      title="Confirmar Exclusão"
+      :message="`Tem certeza que deseja excluir a instituição ${itemToDelete?.nome_fantasia}?`"
+      confirm-text="Excluir"
+      confirm-icon="bi bi-trash"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
+import { Modal } from 'bootstrap';
 import vSelect from 'vue-select';
 import 'vue-select/dist/vue-select.css';
+import PageHeader from '@/components/PageHeader.vue';
+import TableSkeleton from '@/components/TableSkeleton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import ConfirmModal from '@/components/ConfirmModal.vue';
 
 const instituicoes = ref([]);
 const mantenedoras = ref([]);
@@ -142,10 +169,25 @@ const form = ref({});
 const showForm = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
-const validationErrors = ref({});
+const buscaRapida = ref('');
+const itemToDelete = ref(null);
+let confirmModalInstance = null;
+
+const instituicoesFiltradas = computed(() => {
+  if (!buscaRapida.value) return instituicoes.value;
+  
+  const termo = buscaRapida.value.toLowerCase();
+  return instituicoes.value.filter(inst => 
+    inst.nome_fantasia?.toLowerCase().includes(termo) ||
+    inst.razao_social?.toLowerCase().includes(termo) ||
+    inst.cnpj?.includes(termo) ||
+    inst.codigo_emec?.includes(termo) ||
+    inst.mantenedora?.razao_social.toLowerCase().includes(termo)
+  );
+});
 
 watch(selectedReitor, (newReitor) => {
-    form.value.reitor_id = newReitor ? newReitor.id : null;
+    form.value.reitor_id = newReitor ? (newReitor.user_id || newReitor.id) : null;
 });
 
 const resetForm = () => {
@@ -156,14 +198,7 @@ const resetForm = () => {
         codigo_sap: '', codigo_emec: '',
     };
     selectedReitor.value = null;
-    validationErrors.value = {};
-};
-
-const getStatusClass = (status) => {
-    if (status === 'Ativo') return 'bg-success';
-    if (status === 'Inativo') return 'bg-danger';
-    if (status === 'Em Extinção') return 'bg-warning text-dark';
-    return 'bg-secondary';
+    reitorOptions.value = [];
 };
 
 const fetchInstituicoes = async () => {
@@ -171,15 +206,20 @@ const fetchInstituicoes = async () => {
     loading.value = true;
     const response = await axios.get('/api/v1/instituicoes');
     instituicoes.value = response.data;
-  } catch (error) { console.error("Erro ao buscar instituições:", error); } 
-  finally { loading.value = false; }
+  } catch (error) { 
+    console.error("Erro ao buscar instituições:", error); 
+  } finally { 
+    loading.value = false; 
+  }
 };
 
 const fetchMantenedoras = async () => {
   try {
     const response = await axios.get('/api/v1/mantenedoras');
     mantenedoras.value = response.data;
-  } catch (error) { console.error("Erro ao buscar mantenedoras:", error); }
+  } catch (error) { 
+    console.error("Erro ao buscar mantenedoras:", error); 
+  }
 };
 
 const fetchUsers = (search, loading) => {
@@ -197,16 +237,6 @@ const fetchUsers = (search, loading) => {
   }
 };
 
-const handleApiError = (error) => {
-  validationErrors.value = {};
-  if (error.response && error.response.status === 422) {
-    validationErrors.value = error.response.data.errors;
-  } else {
-    console.error("Erro na API:", error);
-    alert("Ocorreu um erro inesperado.");
-  }
-};
-
 const showCreateForm = () => {
   isEditing.value = false;
   editingId.value = null;
@@ -218,15 +248,19 @@ const showEditForm = (instituicao) => {
   isEditing.value = true;
   editingId.value = instituicao.id;
   form.value = { ...instituicao };
+  
   if (instituicao.reitor) {
       selectedReitor.value = {
           id: instituicao.reitor.id,
-          name: instituicao.reitor.name
+          name: instituicao.reitor.name,
+          usuario: instituicao.reitor
       };
+      reitorOptions.value = [selectedReitor.value];
   } else {
       selectedReitor.value = null;
+      reitorOptions.value = [];
   }
-  validationErrors.value = {};
+  
   showForm.value = true;
 };
 
@@ -240,7 +274,10 @@ const createInstituicao = async () => {
     await axios.post('/api/v1/instituicoes', form.value);
     await fetchInstituicoes();
     hideForm();
-  } catch (error) { handleApiError(error); }
+  } catch (error) { 
+    console.error("Erro ao criar instituição:", error);
+    alert('Erro ao criar instituição. Verifique os dados e tente novamente.');
+  }
 };
 
 const updateInstituicao = async () => {
@@ -248,20 +285,35 @@ const updateInstituicao = async () => {
     await axios.put(`/api/v1/instituicoes/${editingId.value}`, form.value);
     await fetchInstituicoes();
     hideForm();
-  } catch (error) { handleApiError(error); }
+  } catch (error) { 
+    console.error("Erro ao atualizar instituição:", error);
+    alert('Erro ao atualizar instituição. Verifique os dados e tente novamente.');
+  }
 };
 
-const deleteInstituicao = async (id) => {
-  if (confirm("Tem certeza que deseja excluir esta instituição?")) {
-    try {
-      await axios.delete(`/api/v1/instituicoes/${id}`);
-      await fetchInstituicoes();
-    } catch (error) { console.error("Erro ao excluir instituição:", error); }
+const prepareDelete = (instituicao) => {
+  itemToDelete.value = instituicao;
+  confirmModalInstance?.show();
+};
+
+const confirmDelete = async () => {
+  try {
+    await axios.delete(`/api/v1/instituicoes/${itemToDelete.value.id}`);
+    await fetchInstituicoes();
+    itemToDelete.value = null;
+  } catch (error) { 
+    console.error("Erro ao excluir instituição:", error);
+    alert('Erro ao excluir instituição. Pode haver registros vinculados (campi, cursos).');
   }
 };
 
 onMounted(() => {
   fetchInstituicoes();
   fetchMantenedoras();
+  
+  const modalEl = document.getElementById('confirmDeleteModal');
+  if (modalEl) {
+    confirmModalInstance = new Modal(modalEl);
+  }
 });
 </script>

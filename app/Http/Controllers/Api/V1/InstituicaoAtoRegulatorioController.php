@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1; // Garanta que o namespace está correto
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\InstituicaoAtoRegulatorio;
@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 
-// Garanta que o nome da classe está correto
 class InstituicaoAtoRegulatorioController extends Controller
 {
     public function index(Request $request): JsonResponse
@@ -27,7 +26,13 @@ class InstituicaoAtoRegulatorioController extends Controller
     {
         $validatedData = $request->validate([
             'instituicao_id' => 'required|exists:instituicoes,id',
-            'tipo_ato' => ['required', Rule::in(['Credenciamento', 'Recredenciamento', 'Outro'])],
+            'tipo_ato' => ['required', Rule::in([
+                'Credenciamento', 
+                'Recredenciamento', 
+                'Descredenciamento',
+                'Renovação de Reconhecimento',
+                'Outro'
+            ])],
             'numero_portaria' => 'required|string|max:255',
             'data_publicacao_dou' => 'required|date',
             'link_publicacao' => 'nullable|url',
@@ -36,6 +41,27 @@ class InstituicaoAtoRegulatorioController extends Controller
 
         $ato = InstituicaoAtoRegulatorio::create($validatedData);
         return response()->json(['message' => 'Ato Regulatório criado!', 'data' => $ato], 201);
+    }
+
+    public function update(Request $request, InstituicaoAtoRegulatorio $atoRegulatorio): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'instituicao_id' => 'required|exists:instituicoes,id',
+            'tipo_ato' => ['required', Rule::in([
+                'Credenciamento', 
+                'Recredenciamento', 
+                'Descredenciamento',
+                'Renovação de Reconhecimento',
+                'Outro'
+            ])],
+            'numero_portaria' => 'required|string|max:255',
+            'data_publicacao_dou' => 'required|date',
+            'link_publicacao' => 'nullable|url',
+            'data_validade_ato' => 'nullable|date|after_or_equal:data_publicacao_dou',
+        ]);
+
+        $atoRegulatorio->update($validatedData);
+        return response()->json(['message' => 'Ato Regulatório atualizado!', 'data' => $atoRegulatorio]);
     }
 
     public function destroy(InstituicaoAtoRegulatorio $atoRegulatorio): JsonResponse

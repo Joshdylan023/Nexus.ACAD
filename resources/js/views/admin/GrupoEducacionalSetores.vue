@@ -1,177 +1,239 @@
 <template>
   <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 v-if="grupoEducacional && grupoEducacional.nome" class="text-white">Gerir Setores do Grupo: {{ grupoEducacional.nome }}</h2>
-      <router-link to="/admin/institucional/grupos-educacionais" class="btn btn-secondary">Voltar</router-link>
+    <PageHeader 
+      :title="`Setores - ${grupoNome}`"
+      :breadcrumbs="[
+        { label: 'Estrutura Organizacional', path: '/admin/institucional' },
+        { label: 'Grupos Educacionais', path: '/admin/institucional/grupos-educacionais' },
+        { label: grupoNome || 'Setores' }
+      ]"
+      :show-search="!showForm"
+      search-placeholder="Buscar setor..."
+      v-model="buscaRapida"
+    >
+      <template #actions>
+        <router-link to="/admin/institucional/grupos-educacionais" class="btn btn-secondary me-2">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </router-link>
+        <button v-if="!showForm" @click="showCreateForm" class="btn btn-success">
+          <i class="bi bi-plus-lg"></i> Adicionar Setor
+        </button>
+      </template>
+    </PageHeader>
+
+    <div v-if="showForm" class="card card-glass mb-4">
+      <div class="card-header">{{ isEditing ? 'Editar Vínculo de Setor' : 'Adicionar Novo Setor' }}</div>
+      <div class="card-body">
+        <form @submit.prevent="isEditing ? updateSetor() : createSetor()">
+          <div class="mb-3">
+            <label class="form-label">Setor</label>
+            <select class="form-select" v-model="form.setor_id" required :disabled="isEditing">
+              <option :value="null">-- Selecione --</option>
+              <option v-for="setor in setoresDisponiveis" :key="setor.id" :value="setor.id">
+                {{ setor.nome }} ({{ setor.tipo }})
+              </option>
+            </select>
+            <small class="text-white-50">Apenas setores do tipo "Corporativo" podem ser vinculados</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Setor Pai (Opcional)</label>
+              <select class="form-select" v-model="form.pai_id">
+                <option :value="null">-- Nenhum (Setor Raiz) --</option>
+                <option v-for="setor in setoresVinculados" :key="setor.pivot.id" :value="setor.pivot.id">
+                  {{ setor.nome }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Gestor do Setor (Opcional)</label>
+              <v-select
+                :get-option-label="option => option.usuario ? option.usuario.name : option.name"
+                :options="gestorOptions"
+                @search="fetchGestores"
+                v-model="selectedGestor"
+                placeholder="Digite o nome ou matrícula..."
+              >
+                <template #option="option">
+                  {{ option.usuario ? option.usuario.name : option.name }}<br>
+                  <small class="text-muted" v-if="option.matricula_funcional">Matrícula: {{ option.matricula_funcional }}</small>
+                </template>
+                <template #selected-option="option">
+                  <div>{{ option.usuario ? option.usuario.name : option.name }}</div>
+                </template>
+              </v-select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" v-model="form.status" required>
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo</option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Centro de Custo SAP (Opcional)</label>
+              <input type="text" class="form-control" v-model="form.centro_custo_sap">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Centro de Resultado SAP (Opcional)</label>
+              <input type="text" class="form-control" v-model="form.centro_resultado_sap">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" v-model="form.requer_portaria_nomeacao_gestor" id="requerPortaria">
+              <label class="form-check-label" for="requerPortaria">
+                Requer Portaria de Nomeação do Gestor
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Salvar</button>
+          <button type="button" @click="hideForm" class="btn btn-secondary ms-2">Cancelar</button>
+        </form>
+      </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-5">
-        <div class="card card-glass">
-          <div class="card-header">Catálogo de Setores (Corporativos)</div>
-          <div v-if="loading.catalogo" class="text-center p-3">A carregar catálogo...</div>
-          <ul v-else class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
-            <li v-for="setor in setoresDisponiveis" :key="setor.id" class="list-group-item d-flex justify-content-between align-items-center bg-transparent text-white">
-              {{ setor.nome }}
-              <button @click="abrirModalVincular(setor)" class="btn btn-sm btn-primary">Vincular</button>
-            </li>
-            <li v-if="!setoresDisponiveis.length && !loading.catalogo" class="list-group-item text-muted bg-transparent">
-              Nenhum setor corporativo disponível para vincular.
-            </li>
-          </ul>
-        </div>
-      </div>
-      
-      <div class="col-md-7">
-        <div class="card card-glass">
-          <div class="card-header">Setores Vinculados a este Grupo Educacional</div>
-          <table class="table table-hover table-glass mb-0">
-            <thead>
-              <tr>
-                <th>Setor</th>
-                <th>Gestor</th>
-                <th>C. Custo SAP</th>
-                <th>C. Resultado SAP</th>
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-                <tr v-if="loading.vinculados"><td colspan="6" class="text-center">A carregar...</td></tr>
-                <tr v-for="setor in setoresVinculados" :key="setor.pivot.id">
-                    <td>{{ setor.nome }}</td>
-                    <td>{{ setor.pivot.gestor ? setor.pivot.gestor.name : 'A definir' }}</td>
-                    <td>{{ setor.pivot.centro_custo_sap }}</td>
-                    <td>{{ setor.pivot.centro_resultado_sap }}</td>
-                    <td><span class="badge" :class="getStatusClass(setor.pivot.status)">{{ setor.pivot.status }}</span></td>
-                    <td>
-                        <button @click="abrirModalEditar(setor)" class="btn btn-sm btn-primary me-2" title="Editar Vínculo"><i class="bi bi-pencil"></i></button>
-                        <button @click="desvincularSetor(setor.id)" class="btn btn-sm btn-danger" title="Desvincular Setor"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                 <tr v-if="!setoresVinculados.length && !loading.vinculados">
-                    <td colspan="6" class="text-center text-muted">Nenhum setor vinculado a este grupo educacional.</td>
-                </tr>
-            </tbody>
-          </table>
-        </div>
+    <div class="card card-glass">
+      <div class="card-header"><h4>Setores Vinculados</h4></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th class="ps-4">Nome do Setor</th>
+              <th>Tipo</th>
+              <th>Gestor</th>
+              <th>Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <TableSkeleton v-if="loading" :columns="5" :rows="5" />
+          <tbody v-else>
+            <tr v-for="setor in setoresFiltrados" :key="setor.pivot.id">
+              <td class="ps-4">{{ setor.nome }}</td>
+              <td><StatusBadge :status="setor.tipo" type="tipo" /></td>
+              <td>{{ setor.pivot.gestor ? setor.pivot.gestor.name : 'Não definido' }}</td>
+              <td><StatusBadge :status="setor.pivot.status" /></td>
+              <td class="text-center">
+                <button @click="showEditForm(setor)" class="btn btn-sm btn-primary me-2" title="Editar Vínculo">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button @click="prepareDelete(setor)" class="btn btn-sm btn-danger" title="Remover Vínculo">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr v-if="setoresFiltrados.length === 0">
+              <td colspan="5" class="text-center text-muted py-4">
+                {{ buscaRapida ? 'Nenhum resultado encontrado para sua busca.' : 'Nenhum setor vinculado.' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="modal fade" id="setorModalGrupoEducacional" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content card-glass">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ isEditing ? 'Editar Vínculo' : 'Vincular Setor' }}: {{ setorSelecionado && setorSelecionado.nome ? setorSelecionado.nome : '' }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="salvarVinculo">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Gestor do Setor (Opcional)</label>
-                  <v-select
-                    :get-option-label="option => option.usuario ? option.usuario.name : option.name"
-                    :options="gestorOptions"
-                    @search="fetchGestores"
-                    v-model="selectedGestor"
-                    placeholder="Digite o nome, CPF ou matrícula..."
-                  >
-                    <template #option="option">
-                        {{ option.usuario ? option.usuario.name : option.name }}<br>
-                        <small class="text-muted" v-if="option.matricula_funcional">Matrícula: {{ option.matricula_funcional }}</small>
-                    </template>
-                    <template #selected-option="option">
-                        <div>{{ option.usuario ? option.usuario.name : option.name }}</div>
-                    </template>
-                  </v-select>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Status do Vínculo</label>
-                  <select class="form-select" v-model="formVinculo.status" required>
-                    <option value="Ativo">Ativo</option>
-                    <option value="Inativo">Inativo</option>
-                  </select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Centro de Custo SAP</label>
-                  <input type="text" class="form-control" v-model="formVinculo.centro_custo_sap">
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Centro de Resultado SAP</label>
-                  <input type="text" class="form-control" v-model="formVinculo.centro_resultado_sap">
-                </div>
-              </div>
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" v-model="formVinculo.requer_portaria_nomeacao_gestor" id="requerPortariaGrupo">
-                <label class="form-check-label" for="requerPortariaGrupo">
-                  Requer Portaria de Nomeação do Gestor
-                </label>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Salvar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Modal de Confirmação -->
+    <ConfirmModal
+      id="confirmDeleteModal"
+      title="Confirmar Remoção"
+      :message="`Tem certeza que deseja remover o vínculo do setor ${itemToDelete?.nome}?`"
+      confirm-text="Remover"
+      confirm-icon="bi bi-trash"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { Modal } from 'bootstrap';
 import vSelect from 'vue-select';
 import 'vue-select/dist/vue-select.css';
+import PageHeader from '@/components/PageHeader.vue';
+import TableSkeleton from '@/components/TableSkeleton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import ConfirmModal from '@/components/ConfirmModal.vue';
 
 const route = useRoute();
-const router = useRouter();
-
-const grupoEducacionalId = ref(route.params.id);
-const grupoEducacional = ref({});
-const catalogoSetores = ref([]);
+const grupoId = ref(route.params.id);
+const grupoNome = ref('');
 const setoresVinculados = ref([]);
+const setoresDisponiveis = ref([]);
 const gestorOptions = ref([]);
 const selectedGestor = ref(null);
-const loading = ref({ catalogo: true, vinculados: true });
+const loading = ref(true);
+const form = ref({});
+const showForm = ref(false);
 const isEditing = ref(false);
-const setorModal = ref(null);
-const setorSelecionado = ref(null);
-const formVinculo = ref({});
+const editingId = ref(null);
+const buscaRapida = ref('');
+const itemToDelete = ref(null);
+let confirmModalInstance = null;
 
-watch(selectedGestor, (newGestor) => {
-    formVinculo.value.gestor_id = newGestor ? (newGestor.user_id || newGestor.id) : null;
+const setoresFiltrados = computed(() => {
+  if (!buscaRapida.value) return setoresVinculados.value;
+  
+  const termo = buscaRapida.value.toLowerCase();
+  return setoresVinculados.value.filter(setor => 
+    setor.nome?.toLowerCase().includes(termo) ||
+    setor.tipo?.toLowerCase().includes(termo)
+  );
 });
 
-const fetchGrupoEducacional = async () => {
-    try {
-        const response = await axios.get(`/api/v1/grupos-educacionais/${grupoEducacionalId.value}`);
-        grupoEducacional.value = response.data.data;
-    } catch (error) { console.error("Erro ao buscar dados do grupo educacional:", error); }
+watch(selectedGestor, (newGestor) => {
+  form.value.gestor_id = newGestor ? (newGestor.user_id || newGestor.id) : null;
+});
+
+const resetForm = () => {
+  form.value = {
+    setor_id: null,
+    pai_id: null,
+    gestor_id: null,
+    status: 'Ativo',
+    centro_custo_sap: '',
+    centro_resultado_sap: '',
+    requer_portaria_nomeacao_gestor: false
+  };
+  selectedGestor.value = null;
+  gestorOptions.value = [];
 };
 
-const fetchCatalogoSetores = async () => {
-    try {
-        loading.value.catalogo = true;
-        const response = await axios.get('/api/v1/setores?tipos=Corporativo');
-        catalogoSetores.value = response.data;
-    } catch (error) { console.error("Erro ao buscar catálogo de setores:", error); }
-    finally { loading.value.catalogo = false; }
+const fetchGrupo = async () => {
+  try {
+    const response = await axios.get(`/api/v1/grupos-educacionais/${grupoId.value}`);
+    grupoNome.value = response.data.nome;
+  } catch (error) {
+    console.error('Erro ao buscar grupo:', error);
+  }
 };
 
-const fetchSetoresVinculados = async () => {
-    try {
-        loading.value.vinculados = true;
-        const response = await axios.get(`/api/v1/grupos-educacionais/${grupoEducacionalId.value}/setores`);
-        setoresVinculados.value = response.data || [];
-    } catch (error) { console.error("Erro ao buscar setores vinculados:", error); }
-    finally { loading.value.vinculados = false; }
+const fetchSetores = async () => {
+  try {
+    loading.value = true;
+    const response = await axios.get(`/api/v1/grupos-educacionais/${grupoId.value}/setores`);
+    setoresVinculados.value = response.data;
+  } catch (error) {
+    console.error('Erro ao buscar setores:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const fetchSetoresDisponiveis = async () => {
+  try {
+    const response = await axios.get('/api/v1/setores');
+    setoresDisponiveis.value = response.data.filter(s => s.tipo === 'Corporativo');
+  } catch (error) {
+    console.error('Erro ao buscar setores disponíveis:', error);
+  }
 };
 
 const fetchGestores = (search, loading) => {
@@ -182,102 +244,96 @@ const fetchGestores = (search, loading) => {
         gestorOptions.value = response.data;
       })
       .catch(error => {
-        console.error("Erro ao buscar colaboradores:", error);
+        console.error('Erro ao buscar gestores:', error);
         gestorOptions.value = [];
       })
       .finally(() => loading(false));
   }
 };
 
-const setoresDisponiveis = computed(() => {
-    const idsVinculados = setoresVinculados.value.map(s => s.id);
-    return catalogoSetores.value.filter(s => !idsVinculados.includes(s.id));
-});
-
-const getStatusClass = (status) => {
-  if (status === 'Ativo') return 'bg-success';
-  if (status === 'Inativo') return 'bg-danger';
-  return 'bg-secondary';
+const showCreateForm = () => {
+  isEditing.value = false;
+  editingId.value = null;
+  resetForm();
+  showForm.value = true;
 };
 
-const abrirModalVincular = (setor) => {
-    isEditing.value = false;
-    setorSelecionado.value = setor;
-    formVinculo.value = {
-        setor_id: setor.id,
-        gestor_id: null,
-        status: 'Ativo',
-        centro_custo_sap: '',
-        centro_resultado_sap: '',
-        requer_portaria_nomeacao_gestor: false
+const showEditForm = (setor) => {
+  isEditing.value = true;
+  editingId.value = setor.pivot.id;
+  form.value = {
+    setor_id: setor.id,
+    pai_id: setor.pivot.pai_id,
+    gestor_id: setor.pivot.gestor_id,
+    status: setor.pivot.status,
+    centro_custo_sap: setor.pivot.centro_custo_sap || '',
+    centro_resultado_sap: setor.pivot.centro_resultado_sap || '',
+    requer_portaria_nomeacao_gestor: setor.pivot.requer_portaria_nomeacao_gestor || false
+  };
+
+  if (setor.pivot.gestor) {
+    selectedGestor.value = {
+      id: setor.pivot.gestor.id,
+      name: setor.pivot.gestor.name,
+      usuario: setor.pivot.gestor
     };
-    selectedGestor.value = null;
-    if (setorModal.value) setorModal.value.show();
+    gestorOptions.value = [selectedGestor.value];
+  }
+
+  showForm.value = true;
 };
 
-const abrirModalEditar = (setor) => {
-    isEditing.value = true;
-    setorSelecionado.value = setor;
-    formVinculo.value = {
-        gestor_id: setor.pivot.gestor_id,
-        status: setor.pivot.status,
-        centro_custo_sap: setor.pivot.centro_custo_sap,
-        centro_resultado_sap: setor.pivot.centro_resultado_sap,
-        requer_portaria_nomeacao_gestor: setor.pivot.requer_portaria_nomeacao_gestor
-    };
-    if (setor.pivot.gestor) {
-        selectedGestor.value = {
-            id: setor.pivot.gestor.id,
-            name: setor.pivot.gestor.name,
-            matricula_funcional: setor.pivot.gestor.matricula_funcional // Assume this is available
-        };
-    } else {
-        selectedGestor.value = null;
-    }
-    if (setorModal.value) setorModal.value.show();
+const hideForm = () => {
+  showForm.value = false;
+  isEditing.value = false;
 };
 
-const salvarVinculo = async () => {
-    try {
-        const url = `/api/v1/grupos-educacionais/${grupoEducacionalId.value}/setores`;
-        const payload = isEditing.value 
-            ? { ...formVinculo.value } 
-            : { setor_id: setorSelecionado.value.id, ...formVinculo.value };
-        
-        if (isEditing.value) {
-            await axios.put(`${url}/${setorSelecionado.value.id}`, payload);
-        } else {
-            await axios.post(url, payload);
-        }
-
-        await fetchSetoresVinculados();
-        if (setorModal.value) setorModal.value.hide();
-    } catch (error) {
-        console.error("Erro ao salvar vínculo:", error);
-        alert('Ocorreu um erro ao salvar.');
-    }
+const createSetor = async () => {
+  try {
+    await axios.post(`/api/v1/grupos-educacionais/${grupoId.value}/setores`, form.value);
+    await fetchSetores();
+    hideForm();
+  } catch (error) {
+    console.error('Erro ao vincular setor:', error);
+    alert('Erro ao vincular setor. Verifique os dados.');
+  }
 };
 
-const desvincularSetor = async (setorId) => {
-    if(confirm('Tem certeza que deseja desvincular este setor do grupo educacional?')){
-        try {
-            await axios.delete(`/api/v1/grupos-educacionais/${grupoEducacionalId.value}/setores/${setorId}`);
-            await fetchSetoresVinculados();
-        } catch (error) {
-            console.error("Erro ao desvincular setor:", error);
-            alert('Erro ao desvincular o setor.');
-        }
-    }
+const updateSetor = async () => {
+  try {
+    await axios.put(`/api/v1/grupos-educacionais/${grupoId.value}/setores/${form.value.setor_id}`, form.value);
+    await fetchSetores();
+    hideForm();
+  } catch (error) {
+    console.error('Erro ao atualizar vínculo:', error);
+    alert('Erro ao atualizar vínculo. Verifique os dados.');
+  }
+};
+
+const prepareDelete = (setor) => {
+  itemToDelete.value = setor;
+  confirmModalInstance?.show();
+};
+
+const confirmDelete = async () => {
+  try {
+    await axios.delete(`/api/v1/grupos-educacionais/${grupoId.value}/setores/${itemToDelete.value.id}`);
+    await fetchSetores();
+    itemToDelete.value = null;
+  } catch (error) {
+    console.error('Erro ao remover vínculo:', error);
+    alert('Erro ao remover vínculo do setor.');
+  }
 };
 
 onMounted(() => {
-    fetchGrupoEducacional();
-    fetchCatalogoSetores();
-    fetchSetoresVinculados();
-    
-    const modalElement = document.getElementById('setorModalGrupoEducacional');
-    if (modalElement) {
-        setorModal.value = new Modal(modalElement);
-    }
+  fetchGrupo();
+  fetchSetores();
+  fetchSetoresDisponiveis();
+
+  const modalEl = document.getElementById('confirmDeleteModal');
+  if (modalEl) {
+    confirmModalInstance = new Modal(modalEl);
+  }
 });
 </script>

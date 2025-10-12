@@ -95,62 +95,59 @@ const route = useRoute();
 const menuStructure = ref({
   // GESTÃO INSTITUCIONAL
   institucional: {
-    name: 'Gestão Institucional',
-    icon: 'bi bi-bank2',
-    basePath: '/admin/institucional',
-    menus: [
-      {
-        label: 'Grupos Educacionais',
-        path: '#',
-        icon: 'bi bi-collection',
-        submenus: [
-          { label: 'Grupos Educacionais', path: '/admin/institucional/grupos-educacionais' },
-          { label: 'Setores', path: '/admin/institucional/grupos-educacionais/setores' },
-        ]
-      },
-      {
-        label: 'Mantenedora',
-        path: '#',
-        icon: 'bi bi-building',
-        submenus: [
-          { label: 'Mantenedora', path: '/admin/institucional/mantenedoras' },
-          { label: 'Setores', path: '/admin/institucional/mantenedoras/setores' },
-        ]
-      },
-      {
-        label: 'Instituição',
-        path: '#',
-        icon: 'bi bi-bank2',
-        submenus: [
-          { label: 'Instituição', path: '/admin/institucional/instituicoes' },
-          { label: 'Setores', path: '/admin/institucional/instituicoes/setores' },
-          { label: 'Atos Regulatórios da IES', path: '/admin/institucional/instituicoes/atos-regulatorios' },
-        ]
-      },
-      { label: 'Contrato Educacional', path: '/admin/institucional/contrato-educacional', icon: 'bi bi-file-text' },
-      {
-        label: 'Campus',
-        path: '#',
-        icon: 'bi bi-geo-alt',
-        submenus: [
-          { label: 'Campus', path: '/admin/institucional/campi' },
-          { label: 'Setor', path: '/admin/institucional/campi/setores' },
-        ]
-      },
-      { label: 'Setor (Catálogo)', path: '/admin/institucional/catalogo-setores', icon: 'bi bi-journal-bookmark' },
-      {
-        label: 'Miscelâneas',
-        path: '#',
-        icon: 'bi bi-layers',
-        submenus: [
-          { label: 'Identidade Visual', path: '/admin/institucional/miscelaneas/identidade-visual' },
-          { label: 'Travas Matrícula', path: '/admin/institucional/miscelaneas/travas-matricula' },
-          { label: 'Travas Renovação', path: '/admin/institucional/miscelaneas/travas-renovacao' },
-          { label: 'Travas Financeiras', path: '/admin/institucional/miscelaneas/travas-financeiras' },
-        ]
-      },
-      { label: 'NexusVision', path: '/admin/institucional/nexusvision', icon: 'bi bi-display' },
-    ],
+  name: 'Gestão Institucional',
+  icon: 'bi bi-bank2',
+  basePath: '/admin/institucional',
+  menus: [
+    {
+      label: 'Estrutura Organizacional',
+      path: '#',
+      icon: 'bi bi-diagram-3-fill',
+      submenus: [
+        { label: 'Grupos Educacionais', path: '/admin/institucional/grupos-educacionais' },
+        { label: 'Mantenedoras', path: '/admin/institucional/mantenedoras' },
+        { label: 'Instituições (IES)', path: '/admin/institucional/instituicoes' },
+        { label: 'Campi', path: '/admin/institucional/campi' },
+      ]
+    },
+    {
+      label: 'Gestão de Setores',
+      path: '#',
+      icon: 'bi bi-building-gear',
+      submenus: [
+        { label: 'Catálogo de Setores', path: '/admin/institucional/catalogo-setores' },
+      ]
+    },
+    {
+      label: 'Atos Regulatórios',
+      path: '#',
+      icon: 'bi bi-file-earmark-check',
+      submenus: [
+        { label: 'Atos das IES', path: '/admin/institucional/instituicoes/atos-regulatorios' },
+      ]
+    },
+    { 
+      label: 'Contrato Educacional', 
+      path: '/admin/institucional/contrato-educacional', 
+      icon: 'bi bi-file-text' 
+    },
+    {
+      label: 'Configurações',
+      path: '#',
+      icon: 'bi bi-sliders',
+      submenus: [
+        { label: 'Identidade Visual', path: '/admin/institucional/miscelaneas/identidade-visual' },
+        { label: 'Travas de Matrícula', path: '/admin/institucional/miscelaneas/travas-matricula' },
+        { label: 'Travas de Renovação', path: '/admin/institucional/miscelaneas/travas-renovacao' },
+        { label: 'Travas Financeiras', path: '/admin/institucional/miscelaneas/travas-financeiras' },
+      ]
+    },
+    { 
+      label: 'NexusVision', 
+      path: '/admin/institucional/nexusvision', 
+      icon: 'bi bi-speedometer2' 
+    },
+  ],
   },
   // GESTÃO ACADÊMICA
   academico: {
