@@ -12,6 +12,13 @@
       v-model="buscaRapida"
     >
       <template #actions>
+        <ExportButton 
+          v-if="!showForm"
+          :data="setoresFiltrados"
+          :columns="exportColumns"
+          :fileName="`setores-campus-${campus.nome || 'campus'}`"
+          class="me-2"
+        />
         <router-link to="/admin/institucional/campi" class="btn btn-secondary me-2">
           <i class="bi bi-arrow-left"></i> Voltar
         </router-link>
@@ -117,7 +124,7 @@
           </thead>
           <TableSkeleton v-if="loading.vinculados" :columns="6" :rows="5" />
           <tbody v-else>
-            <tr v-for="vinculo in setoresFiltrados" :key="vinculo.id">
+            <tr v-for="vinculo in setoresPaginados" :key="vinculo.id">
               <td class="ps-4">{{ vinculo.setor?.nome || 'N/A' }}</td>
               <td><StatusBadge v-if="vinculo.setor" :status="vinculo.setor.tipo" type="tipo" /></td>
               <td>{{ vinculo.gestor ? (vinculo.gestor.usuario ? vinculo.gestor.usuario.name : vinculo.gestor.name) : 'Não definido' }}</td>
@@ -139,10 +146,17 @@
             </tr>
           </tbody>
         </table>
+
+        <Pagination
+          :current-page="currentPage"
+          :total-items="setoresFiltrados.length"
+          :per-page="perPage"
+          @page-changed="changePage"
+          @per-page-changed="changePerPage"
+        />
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <ConfirmModal
       id="confirmDeleteModal"
       title="Confirmar Remoção"
@@ -165,6 +179,9 @@ import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import ExportButton from '@/components/ExportButton.vue';
+import Pagination from '@/components/Pagination.vue';
+import { usePagination } from '@/composables/usePagination';
 
 const route = useRoute();
 const campusId = ref(route.params.id);
@@ -188,6 +205,8 @@ const buscaRapida = ref('');
 const itemToDelete = ref(null);
 let confirmModalInstance = null;
 
+const { currentPage, perPage, paginateItems, changePage, changePerPage } = usePagination(25);
+
 const validSetoresVinculados = computed(() => {
   return setoresVinculados.value.filter(vinculo => vinculo.setor);
 });
@@ -200,6 +219,10 @@ const setoresFiltrados = computed(() => {
     vinculo.setor?.nome.toLowerCase().includes(termo) ||
     vinculo.setor?.tipo.toLowerCase().includes(termo)
   );
+});
+
+const setoresPaginados = computed(() => {
+  return paginateItems(setoresFiltrados.value);
 });
 
 const setoresDisponiveis = computed(() => {
@@ -233,6 +256,19 @@ const setorPaiOptions = computed(() => {
 
   return [...grupoSetoresFormatado, ...mantenedoraSetoresFormatado, ...instituicaoSetoresFormatado, ...campusSetoresFormatado];
 });
+
+watch(buscaRapida, () => {
+  currentPage.value = 1;
+});
+
+const exportColumns = [
+  { key: 'setor.nome', label: 'Nome do Setor' },
+  { key: 'setor.tipo', label: 'Tipo' },
+  { key: 'gestor.name', label: 'Gestor' },
+  { key: 'centro_custo_sap', label: 'Centro de Custo SAP' },
+  { key: 'centro_resultado_sap', label: 'Centro de Resultado SAP' },
+  { key: 'status', label: 'Status' }
+];
 
 watch(selectedGestor, (newGestor) => {
   form.value.gestor_id = newGestor ? (newGestor.user_id || newGestor.id) : null;
@@ -294,12 +330,6 @@ const fetchSetoresVinculados = async () => {
   try {
     loading.value.vinculados = true;
     const response = await axios.get(`/api/v1/campi/${campusId.value}/setores`);
-    console.log('📦 Setores do Campus:', response.data); // ← DEBUG
-    console.log('📊 Tipo de dado:', typeof response.data);
-    console.log('📊 É Array?:', Array.isArray(response.data));
-    if (Array.isArray(response.data) && response.data.length > 0) {
-      console.log('📊 Primeiro item:', response.data[0]);
-    }
     setoresVinculados.value = response.data;
   } catch (error) {
     console.error("Erro ao buscar setores vinculados:", error);

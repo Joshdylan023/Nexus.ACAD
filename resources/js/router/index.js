@@ -17,6 +17,7 @@ import Campi from '../views/admin/Campi.vue';
 import CampusSetores from '../views/admin/CampusSetores.vue';
 import Setores from '../views/admin/Setores.vue';
 
+
 // Gestão Acadêmica
 import GrandeAreas from '../views/admin/GrandeAreas.vue';
 import AreasConhecimento from '../views/admin/AreasConhecimento.vue';
@@ -63,6 +64,38 @@ const routes = [
           { path: 'catalogo-setores', name: 'admin.institucional.setores', component: Setores },
         ],
       },
+
+      // Hierarquia Institucional
+
+{
+  path: '/admin/institucional/hierarquia',
+  name: 'HierarchyView',
+  component: () => import('@/pages/Institucional/HierarchyView.vue'),
+  meta: { requiresAuth: true }
+},
+
+// Dashboard Institucional
+
+{
+  path: '/admin/institucional/dashboard',
+  name: 'DashboardInstitucional',
+  component: () => import('@/pages/Institucional/DashboardInstitucional.vue'),
+  meta: { requiresAuth: true }
+},
+
+{
+  path: '/admin/institucional/system-events',
+  name: 'SystemEvents',
+  component: () => import('@/pages/Institucional/SystemEvents.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/admin/institucional/bulk-import',
+  name: 'BulkImport',
+  component: () => import('@/pages/Institucional/BulkImport.vue'),
+  meta: { requiresAuth: true }
+},
+
       // Módulo: Gestão Acadêmica
       {
         path: 'academico',

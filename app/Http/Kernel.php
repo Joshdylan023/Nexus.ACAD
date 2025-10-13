@@ -50,6 +50,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'system.event' => \App\Http\Middleware\CheckSystemEvent::class,
 
         // --- ADICIONE ESTES DOIS ALIASES PARA O PACOTE SPATIE ---
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

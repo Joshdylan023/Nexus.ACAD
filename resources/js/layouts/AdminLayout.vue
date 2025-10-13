@@ -99,6 +99,11 @@ const menuStructure = ref({
   icon: 'bi bi-bank2',
   basePath: '/admin/institucional',
   menus: [
+    { 
+  label: 'Dashboard', 
+  path: '/admin/institucional/dashboard', 
+  icon: 'bi bi-speedometer2' 
+    },
     {
       label: 'Estrutura Organizacional',
       path: '#',
@@ -108,6 +113,7 @@ const menuStructure = ref({
         { label: 'Mantenedoras', path: '/admin/institucional/mantenedoras' },
         { label: 'Instituições (IES)', path: '/admin/institucional/instituicoes' },
         { label: 'Campi', path: '/admin/institucional/campi' },
+        { label: 'Hierarquia Visual', path: '/admin/institucional/hierarquia' },
       ]
     },
     {
@@ -116,14 +122,6 @@ const menuStructure = ref({
       icon: 'bi bi-building-gear',
       submenus: [
         { label: 'Catálogo de Setores', path: '/admin/institucional/catalogo-setores' },
-      ]
-    },
-    {
-      label: 'Atos Regulatórios',
-      path: '#',
-      icon: 'bi bi-file-earmark-check',
-      submenus: [
-        { label: 'Atos das IES', path: '/admin/institucional/instituicoes/atos-regulatorios' },
       ]
     },
     { 
@@ -136,6 +134,8 @@ const menuStructure = ref({
       path: '#',
       icon: 'bi bi-sliders',
       submenus: [
+        { label: 'Eventos de Sistema', path: '/admin/institucional/system-events' },
+        { label: 'Importação em Massa', path: '/admin/institucional/bulk-import' },
         { label: 'Identidade Visual', path: '/admin/institucional/miscelaneas/identidade-visual' },
         { label: 'Travas de Matrícula', path: '/admin/institucional/miscelaneas/travas-matricula' },
         { label: 'Travas de Renovação', path: '/admin/institucional/miscelaneas/travas-renovacao' },

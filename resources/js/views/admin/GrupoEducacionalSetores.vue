@@ -1,17 +1,24 @@
 <template>
   <div>
     <PageHeader 
-      :title="`Setores - ${grupoNome}`"
+      :title="`Setores - ${grupo.nome || 'Carregando...'}`"
       :breadcrumbs="[
         { label: 'Estrutura Organizacional', path: '/admin/institucional' },
         { label: 'Grupos Educacionais', path: '/admin/institucional/grupos-educacionais' },
-        { label: grupoNome || 'Setores' }
+        { label: grupo.nome || 'Setores' }
       ]"
       :show-search="!showForm"
       search-placeholder="Buscar setor..."
       v-model="buscaRapida"
     >
       <template #actions>
+        <ExportButton 
+          v-if="!showForm"
+          :data="setoresFiltrados"
+          :columns="exportColumns"
+          :fileName="`setores-grupo-${grupo.nome || 'educacional'}`"
+          class="me-2"
+        />
         <router-link to="/admin/institucional/grupos-educacionais" class="btn btn-secondary me-2">
           <i class="bi bi-arrow-left"></i> Voltar
         </router-link>
@@ -41,10 +48,11 @@
               <label class="form-label">Setor Pai (Opcional)</label>
               <select class="form-select" v-model="form.pai_id">
                 <option :value="null">-- Nenhum (Setor Raiz) --</option>
-                <option v-for="setor in setoresVinculados" :key="setor.pivot.id" :value="setor.pivot.id">
+                <option v-for="setor in setoresPaiDisponiveis" :key="setor.pivot.id" :value="setor.pivot.id">
                   {{ setor.nome }}
                 </option>
               </select>
+              <small class="text-white-50">Outros setores já vinculados a este grupo</small>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Gestor do Setor (Opcional)</label>
@@ -70,8 +78,12 @@
             <div class="col-md-4 mb-3">
               <label class="form-label">Status</label>
               <select class="form-select" v-model="form.status" required>
+                <option value="Em Implantação">Em Implantação</option>
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
+                <option value="Suspenso">Suspenso</option>
+                <option value="Concluído">Concluído</option>
+                <option value="Cancelado">Cancelado</option>
               </select>
             </div>
             <div class="col-md-4 mb-3">
@@ -114,7 +126,7 @@
           </thead>
           <TableSkeleton v-if="loading" :columns="5" :rows="5" />
           <tbody v-else>
-            <tr v-for="setor in setoresFiltrados" :key="setor.pivot.id">
+            <tr v-for="setor in setoresPaginados" :key="setor.pivot.id">
               <td class="ps-4">{{ setor.nome }}</td>
               <td><StatusBadge :status="setor.tipo" type="tipo" /></td>
               <td>{{ setor.pivot.gestor ? setor.pivot.gestor.name : 'Não definido' }}</td>
@@ -135,10 +147,17 @@
             </tr>
           </tbody>
         </table>
+
+        <Pagination
+          :current-page="currentPage"
+          :total-items="setoresFiltrados.length"
+          :per-page="perPage"
+          @page-changed="changePage"
+          @per-page-changed="changePerPage"
+        />
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <ConfirmModal
       id="confirmDeleteModal"
       title="Confirmar Remoção"
@@ -161,10 +180,13 @@ import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import ExportButton from '@/components/ExportButton.vue';
+import Pagination from '@/components/Pagination.vue';
+import { usePagination } from '@/composables/usePagination';
 
 const route = useRoute();
 const grupoId = ref(route.params.id);
-const grupoNome = ref('');
+const grupo = ref({});
 const setoresVinculados = ref([]);
 const setoresDisponiveis = ref([]);
 const gestorOptions = ref([]);
@@ -178,6 +200,8 @@ const buscaRapida = ref('');
 const itemToDelete = ref(null);
 let confirmModalInstance = null;
 
+const { currentPage, perPage, paginateItems, changePage, changePerPage } = usePagination(25);
+
 const setoresFiltrados = computed(() => {
   if (!buscaRapida.value) return setoresVinculados.value;
   
@@ -187,6 +211,27 @@ const setoresFiltrados = computed(() => {
     setor.tipo?.toLowerCase().includes(termo)
   );
 });
+
+const setoresPaginados = computed(() => {
+  return paginateItems(setoresFiltrados.value);
+});
+
+const setoresPaiDisponiveis = computed(() => {
+  return setoresVinculados.value.filter(s => !isEditing.value || s.pivot.id !== editingId.value);
+});
+
+watch(buscaRapida, () => {
+  currentPage.value = 1;
+});
+
+const exportColumns = [
+  { key: 'nome', label: 'Nome do Setor' },
+  { key: 'tipo', label: 'Tipo' },
+  { key: 'pivot.gestor.name', label: 'Gestor' },
+  { key: 'pivot.centro_custo_sap', label: 'Centro de Custo SAP' },
+  { key: 'pivot.centro_resultado_sap', label: 'Centro de Resultado SAP' },
+  { key: 'pivot.status', label: 'Status' }
+];
 
 watch(selectedGestor, (newGestor) => {
   form.value.gestor_id = newGestor ? (newGestor.user_id || newGestor.id) : null;
@@ -209,7 +254,7 @@ const resetForm = () => {
 const fetchGrupo = async () => {
   try {
     const response = await axios.get(`/api/v1/grupos-educacionais/${grupoId.value}`);
-    grupoNome.value = response.data.nome;
+    grupo.value = response.data;
   } catch (error) {
     console.error('Erro ao buscar grupo:', error);
   }
@@ -230,7 +275,10 @@ const fetchSetores = async () => {
 const fetchSetoresDisponiveis = async () => {
   try {
     const response = await axios.get('/api/v1/setores');
-    setoresDisponiveis.value = response.data.filter(s => s.tipo === 'Corporativo');
+    const idsVinculados = setoresVinculados.value.map(s => s.id);
+    setoresDisponiveis.value = response.data.filter(s => 
+      s.tipo === 'Corporativo' && !idsVinculados.includes(s.id)
+    );
   } catch (error) {
     console.error('Erro ao buscar setores disponíveis:', error);
   }
@@ -255,6 +303,7 @@ const showCreateForm = () => {
   isEditing.value = false;
   editingId.value = null;
   resetForm();
+  fetchSetoresDisponiveis();
   showForm.value = true;
 };
 
@@ -326,10 +375,9 @@ const confirmDelete = async () => {
   }
 };
 
-onMounted(() => {
-  fetchGrupo();
-  fetchSetores();
-  fetchSetoresDisponiveis();
+onMounted(async () => {
+  await fetchGrupo();
+  await fetchSetores();
 
   const modalEl = document.getElementById('confirmDeleteModal');
   if (modalEl) {

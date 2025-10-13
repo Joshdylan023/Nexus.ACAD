@@ -12,6 +12,13 @@
       v-model="buscaRapida"
     >
       <template #actions>
+        <ExportButton 
+          v-if="!showForm"
+          :data="setoresFiltrados"
+          :columns="exportColumns"
+          :fileName="`setores-mantenedora-${mantenedora.razao_social || 'mantenedora'}`"
+          class="me-2"
+        />
         <router-link to="/admin/institucional/mantenedoras" class="btn btn-secondary me-2">
           <i class="bi bi-arrow-left"></i> Voltar
         </router-link>
@@ -41,7 +48,7 @@
               <label class="form-label">Setor Pai (Opcional)</label>
               <select class="form-select" v-model="form.pai_id">
                 <option :value="null">-- Nenhum (Setor Raiz) --</option>
-                <option v-for="setor in setoresPaiDisponiveis" :key="setor.id" :value="setor.id">
+                <option v-for="setor in setorPaiOptions" :key="setor.id" :value="setor.id">
                   {{ setor.nome }} ({{ setor.origem }})
                 </option>
               </select>
@@ -121,7 +128,7 @@
           </thead>
           <TableSkeleton v-if="loading" :columns="7" :rows="5" />
           <tbody v-else>
-            <tr v-for="setor in setoresFiltrados" :key="setor.pivot.id">
+            <tr v-for="setor in setoresPaginados" :key="setor.pivot.id">
               <td class="ps-4">{{ setor.nome }}</td>
               <td><StatusBadge :status="setor.tipo" type="tipo" /></td>
               <td>{{ setor.pivot.gestor ? setor.pivot.gestor.name : 'Não definido' }}</td>
@@ -144,10 +151,17 @@
             </tr>
           </tbody>
         </table>
+
+        <Pagination
+          :current-page="currentPage"
+          :total-items="setoresFiltrados.length"
+          :per-page="perPage"
+          @page-changed="changePage"
+          @per-page-changed="changePerPage"
+        />
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <ConfirmModal
       id="confirmDeleteModal"
       title="Confirmar Remoção"
@@ -170,6 +184,9 @@ import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import ExportButton from '@/components/ExportButton.vue';
+import Pagination from '@/components/Pagination.vue';
+import { usePagination } from '@/composables/usePagination';
 
 const route = useRoute();
 const mantenedoraId = ref(route.params.id);
@@ -189,6 +206,8 @@ const buscaRapida = ref('');
 const itemToDelete = ref(null);
 let confirmModalInstance = null;
 
+const { currentPage, perPage, paginateItems, changePage, changePerPage } = usePagination(25);
+
 const setoresFiltrados = computed(() => {
   if (!buscaRapida.value) return setoresVinculados.value;
   
@@ -199,12 +218,16 @@ const setoresFiltrados = computed(() => {
   );
 });
 
+const setoresPaginados = computed(() => {
+  return paginateItems(setoresFiltrados.value);
+});
+
 const setoresDisponiveis = computed(() => {
   const idsVinculados = setoresVinculados.value.map(s => s.id);
   return catalogoSetores.value.filter(s => !idsVinculados.includes(s.id));
 });
 
-const setoresPaiDisponiveis = computed(() => {
+const setorPaiOptions = computed(() => {
   const grupoSetores = setoresGrupo.value.map(s => ({
     id: s.pivot.id,
     nome: s.nome,
@@ -221,6 +244,19 @@ const setoresPaiDisponiveis = computed(() => {
 
   return [...grupoSetores, ...mantenedoraSetores];
 });
+
+watch(buscaRapida, () => {
+  currentPage.value = 1;
+});
+
+const exportColumns = [
+  { key: 'nome', label: 'Nome do Setor' },
+  { key: 'tipo', label: 'Tipo' },
+  { key: 'pivot.gestor.name', label: 'Gestor' },
+  { key: 'pivot.centro_custo_sap', label: 'Centro de Custo SAP' },
+  { key: 'pivot.centro_resultado_sap', label: 'Centro de Resultado SAP' },
+  { key: 'pivot.status', label: 'Status' }
+];
 
 watch(selectedGestor, (newGestor) => {
   form.value.gestor_id = newGestor ? (newGestor.user_id || newGestor.id) : null;

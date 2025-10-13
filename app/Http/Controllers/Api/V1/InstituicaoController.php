@@ -5,60 +5,87 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Instituicao;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
 
 class InstituicaoController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
-        return response()->json(Instituicao::with(['mantenedora', 'reitor'])->get());
+        $instituicoes = Instituicao::with(['mantenedora', 'reitor'])->get();
+        return response()->json($instituicoes);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'mantenedora_id' => 'required|exists:mantenedoras,id',
+        $validated = $request->validate([
             'razao_social' => 'required|string|max:255',
-            'nome_fantasia' => 'required|string|max:255',
-            'cnpj' => 'required|string|unique:instituicoes,cnpj|max:18',
-            'tipo_organizacao_academica' => ['required', Rule::in(['Faculdade', 'Centro Universitário', 'Universidade'])],
+            'cnpj' => 'required|string|max:18|unique:instituicoes,cnpj',
+            'nome_fantasia' => 'nullable|string|max:255',
+            'sigla' => 'nullable|string|max:20',
+            'tipo_organizacao_academica' => 'nullable|string|max:100',
+            'categoria_administrativa' => 'nullable|string|max:100',
+            'codigo_mec' => 'nullable|string|max:20',
+            'endereco_sede' => 'nullable|string',
+            'status' => 'nullable|string',
+            'mantenedora_id' => 'required|exists:mantenedoras,id',
             'reitor_id' => 'nullable|exists:users,id',
-            'endereco_sede' => 'required|string',
-            'status' => ['required', Rule::in(['Ativo', 'Inativo', 'Em Extinção'])],
-            'codigo_sap' => 'nullable|string|max:255',
-            'codigo_emec' => 'nullable|string|unique:instituicoes,codigo_emec',
+            'logradouro' => 'nullable|string|max:255',
+            'numero' => 'nullable|string|max:20',
+            'complemento' => 'nullable|string|max:100',
+            'bairro' => 'nullable|string|max:100',
+            'cidade' => 'nullable|string|max:100',
+            'estado' => 'nullable|string|max:2',
+            'cep' => 'nullable|string|max:10'
         ]);
-        $instituicao = Instituicao::create($validatedData);
-        return response()->json(['message' => 'Instituição criada com sucesso!', 'data' => $instituicao->load(['mantenedora', 'reitor'])], 201);
-    }
-    
-    public function show(Instituicao $instituicao): JsonResponse
-    {
-        return response()->json($instituicao->load(['mantenedora', 'reitor']));
+
+        $instituicao = Instituicao::create($validated);
+
+        return response()->json($instituicao, 201);
     }
 
-    public function update(Request $request, Instituicao $instituicao): JsonResponse
+    public function show(Instituicao $instituicao)
     {
-        $validatedData = $request->validate([
-            'mantenedora_id' => 'required|exists:mantenedoras,id',
-            'razao_social' => 'required|string|max:255',
-            'nome_fantasia' => 'required|string|max:255',
-            'cnpj' => ['required', 'string', Rule::unique('instituicoes')->ignore($instituicao->id), 'max:18'],
-            'tipo_organizacao_academica' => ['required', Rule::in(['Faculdade', 'Centro Universitário', 'Universidade'])],
-            'reitor_id' => 'nullable|exists:users,id',
-            'endereco_sede' => 'required|string',
-            'status' => ['required', Rule::in(['Ativo', 'Inativo', 'Em Extinção'])],
-            'codigo_sap' => 'nullable|string|max:255',
-            'codigo_emec' => ['nullable', 'string', Rule::unique('instituicoes')->ignore($instituicao->id)],
-        ]);
-        $instituicao->update($validatedData);
-        return response()->json(['message' => 'Instituição atualizada com sucesso!', 'data' => $instituicao->load(['mantenedora', 'reitor'])]);
+        $instituicao->load(['mantenedora', 'reitor']);
+        return response()->json($instituicao);
     }
-    
-    public function destroy(Instituicao $instituicao): JsonResponse
+
+    public function update(Request $request, Instituicao $instituicao)
     {
-        $instituicao->delete();
-        return response()->json(null, 204);
+        $validated = $request->validate([
+            'razao_social' => 'required|string|max:255',
+            'cnpj' => 'required|string|max:18|unique:instituicoes,cnpj,' . $instituicao->id,
+            'nome_fantasia' => 'nullable|string|max:255',
+            'sigla' => 'nullable|string|max:20',
+            'tipo_organizacao_academica' => 'nullable|string|max:100',
+            'categoria_administrativa' => 'nullable|string|max:100',
+            'codigo_mec' => 'nullable|string|max:20',
+            'endereco_sede' => 'nullable|string',
+            'status' => 'nullable|string',
+            'mantenedora_id' => 'required|exists:mantenedoras,id',
+            'reitor_id' => 'nullable|exists:users,id',
+            'logradouro' => 'nullable|string|max:255',
+            'numero' => 'nullable|string|max:20',
+            'complemento' => 'nullable|string|max:100',
+            'bairro' => 'nullable|string|max:100',
+            'cidade' => 'nullable|string|max:100',
+            'estado' => 'nullable|string|max:2',
+            'cep' => 'nullable|string|max:10'
+        ]);
+
+        $instituicao->update($validated);
+
+        return response()->json($instituicao);
+    }
+
+    public function destroy(Instituicao $instituicao)
+    {
+        try {
+            $instituicao->delete();
+            return response()->json(['message' => 'Instituição excluída com sucesso']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erro ao excluir instituição',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -28,6 +28,11 @@ use App\Http\Controllers\Api\V1\SetorVinculoController;
 use App\Http\Controllers\Api\V1\InstituicaoSetorController;
 use App\Http\Controllers\Api\V1\GrupoEducacionalSetorController;
 use App\Http\Controllers\Api\V1\MantenedoraSetorController;
+use App\Http\Controllers\Api\V1\SystemEventController;
+use App\Http\Controllers\Api\V1\ImportController;
+use App\Http\Controllers\Api\V1\ImportTemplateController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\GlobalSearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,9 +52,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('v1')->group(function () {
         
+        // ROTA PARA BUSCAR USUÁRIOS (para select de eventos)
+        Route::get('/users', [UserController::class, 'index']);
+        
         // MÓDULO: GESTÃO DE ACESSOS
         Route::get('/colaboradores', [ColaboradorController::class, 'index']);
         Route::get('/colaboradores/{id}', [ColaboradorController::class, 'show']);
+        Route::get('/users/colaboradores', [UserController::class, 'colaboradores']);
+        Route::get('users/search', [UserController::class, 'search']);
+
         
         Route::middleware('can:gerenciar-acessos')->group(function () {
             Route::post('/colaboradores', [ColaboradorController::class, 'store']);
@@ -117,6 +128,43 @@ Route::middleware('auth:sanctum')->group(function () {
             // Rota para listar todos os vínculos para selects
             Route::get('/setor-vinculos/all', [SetorVinculoController::class, 'all']);
             Route::apiResource('/setor-vinculos', SetorVinculoController::class)->parameters(['setor-vinculos' => 'setorVinculo']);
+
+            // MÓDULO: GESTÃO DE EVENTOS DO SISTEMA
+            Route::prefix('system-events')->group(function () {
+                Route::get('/', [SystemEventController::class, 'index']);
+                Route::post('/', [SystemEventController::class, 'store']);
+                Route::get('/current', [SystemEventController::class, 'current']);
+                Route::post('/{id}/activate', [SystemEventController::class, 'activate']);
+                Route::post('/{id}/deactivate', [SystemEventController::class, 'deactivate']);
+                Route::delete('/{id}', [SystemEventController::class, 'destroy']);
+            });
+
+            // MÓDULO: IMPORTAÇÃO EM MASSA
+            Route::prefix('imports')->group(function () {
+                // Templates PRIMEIRO
+                Route::get('/templates/list', [ImportTemplateController::class, 'list']);
+                Route::get('/templates/download/{type}', [ImportTemplateController::class, 'download']);
+                
+                // Rotas de importação
+                Route::get('/', [ImportController::class, 'index']);
+                Route::post('/preview', [ImportController::class, 'preview']);
+                Route::post('/import', [ImportController::class, 'import']);
+                
+                // Detalhes por ID (ÚLTIMO)
+                Route::get('/{id}', [ImportController::class, 'show']);
+            });
+
+            // MÓDULO: DASHBOARD (FORA DO GRUPO DE IMPORTS)
+            Route::prefix('dashboard')->group(function () {
+                Route::get('/institucional', [DashboardController::class, 'institucional']);
+            });
+
+            // MÓDULO: BUSCA GLOBAL
+            Route::prefix('global-search')->group(function () {
+                // Busca Global
+                Route::get('search', [GlobalSearchController::class, 'search']);
+
+            });
         });
     });
 });

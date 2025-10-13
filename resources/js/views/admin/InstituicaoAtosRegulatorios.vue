@@ -12,6 +12,13 @@
       v-model="buscaRapida"
     >
       <template #actions>
+        <ExportButton 
+          v-if="!showForm"
+          :data="atosFiltrados"
+          :columns="exportColumns"
+          :fileName="`atos-regulatorios-${instituicaoNome || 'instituicao'}`"
+          class="me-2"
+        />
         <router-link to="/admin/institucional/instituicoes" class="btn btn-secondary me-2">
           <i class="bi bi-arrow-left"></i> Voltar
         </router-link>
@@ -115,7 +122,6 @@
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <ConfirmModal
       id="confirmDeleteModal"
       title="Confirmar Exclusão"
@@ -136,6 +142,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import ExportButton from '@/components/ExportButton.vue';
 
 const route = useRoute();
 const instituicaoId = ref(route.params.id);
@@ -159,6 +166,14 @@ const atosFiltrados = computed(() => {
     ato.numero_portaria?.toLowerCase().includes(termo)
   );
 });
+
+const exportColumns = [
+  { key: 'tipo_ato', label: 'Tipo do Ato' },
+  { key: 'numero_portaria', label: 'Número da Portaria' },
+  { key: 'data_publicacao_dou', label: 'Data de Publicação (D.O.U.)' },
+  { key: 'data_validade_ato', label: 'Data de Validade' },
+  { key: 'link_publicacao', label: 'Link da Publicação' }
+];
 
 const resetForm = () => {
   form.value = {

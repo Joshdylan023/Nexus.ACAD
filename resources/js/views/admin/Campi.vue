@@ -11,6 +11,18 @@
       v-model="buscaRapida"
     >
       <template #actions>
+        <ViewToggle 
+          v-if="!showForm"
+          v-model="viewMode"
+          class="me-2"
+        />
+        <ExportButton 
+          v-if="!showForm"
+          :data="campiFiltrados"
+          :columns="exportColumns"
+          fileName="campi"
+          class="me-2"
+        />
         <button v-if="!showForm" @click="showCreateForm" class="btn btn-success">
           <i class="bi bi-plus-lg"></i> Novo Campus
         </button>
@@ -22,46 +34,21 @@
       <div class="card-body">
         <form @submit.prevent="isEditing ? updateCampus() : createCampus()">
           <div class="mb-3">
-            <label class="form-label">Instituição</label>
+            <label class="form-label">Instituição (IES)</label>
             <select class="form-select" v-model="form.instituicao_id" required>
               <option :value="null">-- Selecione --</option>
-              <option v-for="instituicao in instituicoes" :key="instituicao.id" :value="instituicao.id">{{ instituicao.nome_fantasia }}</option>
+              <option v-for="instituicao in instituicoes" :key="instituicao.id" :value="instituicao.id">
+                {{ instituicao.razao_social }}
+              </option>
             </select>
           </div>
           <div class="mb-3">
-            <label for="nome" class="form-label">Nome do Campus</label>
-            <input type="text" id="nome" class="form-control" v-model="form.nome" required>
+            <label class="form-label">Nome do Campus</label>
+            <input type="text" class="form-control" v-model="form.nome" required>
           </div>
           <div class="mb-3">
-            <label for="endereco_completo" class="form-label">Endereço Completo</label>
-            <input type="text" id="endereco_completo" class="form-control" v-model="form.endereco_completo">
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Gerente da Unidade (Opcional)</label>
-                <v-select
-                    :get-option-label="option => option.usuario ? option.usuario.name : option.name"
-                    :options="gestorOptions"
-                    @search="fetchGestores"
-                    v-model="selectedGestor"
-                    placeholder="Digite a matrícula ou nome..."
-                >
-                    <template #option="option">
-                        {{ option.usuario ? option.usuario.name : option.name }}<br>
-                        <small class="text-muted" v-if="option.matricula_funcional">Matrícula: {{ option.matricula_funcional }}</small>
-                    </template>
-                    <template #selected-option="option">
-                        <div>{{ option.usuario ? option.usuario.name : option.name }}</div>
-                    </template>
-                </v-select>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Status</label>
-                <select class="form-select" v-model="form.status" required>
-                    <option value="Ativo">Ativo</option>
-                    <option value="Inativo">Inativo</option>
-                </select>
-            </div>
+            <label class="form-label">Endereço Completo</label>
+            <input type="text" class="form-control" v-model="form.endereco_completo" required>
           </div>
           <button type="submit" class="btn btn-primary">Salvar</button>
           <button type="button" @click="hideForm" class="btn btn-secondary ms-2">Cancelar</button>
@@ -69,45 +56,111 @@
       </div>
     </div>
 
-    <div class="card card-glass">
-        <div class="card-header"><h4>Campi Cadastrados</h4></div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                  <th class="ps-4">Nome</th>
-                  <th>Instituição</th>
-                  <th>Gerente</th>
-                  <th>Status</th>
-                  <th class="text-center">Ações</th>
-                </tr>
-            </thead>
-            <TableSkeleton v-if="loading" :columns="5" :rows="5" />
-            <tbody v-else>
-                <tr v-for="campus in campiFiltrados" :key="campus.id">
-                  <td class="ps-4">{{ campus.nome }}</td>
-                  <td>{{ campus.instituicao ? campus.instituicao.nome_fantasia : 'N/A' }}</td>
-                  <td>{{ campus.gerente_unidade ? campus.gerente_unidade.name : 'A definir' }}</td>
-                  <td><StatusBadge :status="campus.status" /></td>
-                  <td class="text-center">
-                      <button @click="showEditForm(campus)" class="btn btn-sm btn-primary me-2" title="Editar Campus"><i class="bi bi-pencil"></i></button>
-                      <button @click="prepareDelete(campus)" class="btn btn-sm btn-danger me-2" title="Excluir Campus"><i class="bi bi-trash"></i></button>
-                      <router-link :to="`/admin/institucional/campi/${campus.id}/setores`" class="btn btn-sm btn-secondary" title="Gerir Setores">
-                        <i class="bi bi-diagram-3"></i>
-                      </router-link>
-                  </td>
-                </tr>
-                 <tr v-if="campiFiltrados.length === 0">
-                    <td colspan="5" class="text-center text-muted py-4">
-                      {{ buscaRapida ? 'Nenhum resultado encontrado para sua busca.' : 'Nenhum campus encontrado.' }}
-                    </td>
-                </tr>
-            </tbody>
-            </table>
+    <!-- Visualização em Tabela -->
+    <div v-if="viewMode === 'table'" class="card card-glass">
+      <div class="card-header"><h4>Campi Cadastrados</h4></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th class="ps-4">Nome do Campus</th>
+              <th>Instituição</th>
+              <th>Endereço</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <TableSkeleton v-if="loading" :columns="4" :rows="5" />
+          <tbody v-else>
+            <tr v-for="campus in campiPaginados" :key="campus.id">
+              <td class="ps-4">{{ campus.nome }}</td>
+              <td>{{ campus.instituicao?.razao_social || 'N/A' }}</td>
+              <td>{{ campus.endereco_completo }}</td>
+              <td class="text-center">
+                <button @click="showEditForm(campus)" class="btn btn-sm btn-primary me-2" title="Editar Campus">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button @click="prepareDelete(campus)" class="btn btn-sm btn-danger me-2" title="Excluir Campus">
+                  <i class="bi bi-trash"></i>
+                </button>
+                <router-link :to="`/admin/institucional/campi/${campus.id}/setores`" class="btn btn-sm btn-secondary" title="Gerir Setores">
+                  <i class="bi bi-diagram-3"></i>
+                </router-link>
+              </td>
+            </tr>
+            <tr v-if="campiFiltrados.length === 0">
+              <td colspan="4" class="text-center text-muted py-4">
+                {{ buscaRapida ? 'Nenhum resultado encontrado.' : 'Nenhum campus encontrado.' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <Pagination
+          :current-page="currentPage"
+          :total-items="campiFiltrados.length"
+          :per-page="perPage"
+          @page-changed="changePage"
+          @per-page-changed="changePerPage"
+        />
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
+    <!-- Visualização em Cards -->
+    <div v-else>
+      <TableSkeleton v-if="loading" :columns="3" :rows="3" />
+      <CardView 
+        v-else
+        :items="campiPaginados"
+        empty-message="Nenhum campus encontrado"
+      >
+        <template #header="{ item }">
+          <div>
+            <h5 class="mb-1" style="color: white; font-size: 1.125rem; font-weight: 600;">{{ item.nome }}</h5>
+            <span class="badge bg-warning text-dark">Campus</span>
+          </div>
+        </template>
+
+        <template #body="{ item }">
+          <div class="info-group">
+            <div class="info-item">
+              <i class="bi bi-building me-2"></i>
+              <span class="label">Instituição:</span>
+              <span class="value">{{ item.instituicao?.razao_social || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <i class="bi bi-geo-alt me-2"></i>
+              <span class="label">Endereço:</span>
+              <span class="value">{{ item.endereco_completo }}</span>
+            </div>
+          </div>
+        </template>
+
+        <template #footer="{ item }">
+          <div class="action-buttons">
+            <button @click="showEditForm(item)" class="btn btn-sm btn-primary" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button @click="prepareDelete(item)" class="btn btn-sm btn-danger" title="Excluir">
+              <i class="bi bi-trash"></i>
+            </button>
+            <router-link :to="`/admin/institucional/campi/${item.id}/setores`" class="btn btn-sm btn-secondary" title="Setores">
+              <i class="bi bi-diagram-3"></i>
+            </router-link>
+          </div>
+        </template>
+      </CardView>
+
+      <div class="mt-3">
+        <Pagination
+          :current-page="currentPage"
+          :total-items="campiFiltrados.length"
+          :per-page="perPage"
+          @page-changed="changePage"
+          @per-page-changed="changePerPage"
+        />
+      </div>
+    </div>
+
     <ConfirmModal
       id="confirmDeleteModal"
       title="Confirmar Exclusão"
@@ -120,20 +173,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { Modal } from 'bootstrap';
-import vSelect from 'vue-select';
-import 'vue-select/dist/vue-select.css';
 import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
-import StatusBadge from '@/components/StatusBadge.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import ExportButton from '@/components/ExportButton.vue';
+import Pagination from '@/components/Pagination.vue';
+import CardView from '@/components/CardView.vue';
+import ViewToggle from '@/components/ViewToggle.vue';
+import { usePagination } from '@/composables/usePagination';
 
 const campi = ref([]);
 const instituicoes = ref([]);
-const gestorOptions = ref([]);
-const selectedGestor = ref(null);
 const loading = ref(true);
 const form = ref({});
 const showForm = ref(false);
@@ -141,7 +194,10 @@ const isEditing = ref(false);
 const editingId = ref(null);
 const buscaRapida = ref('');
 const itemToDelete = ref(null);
+const viewMode = ref('table');
 let confirmModalInstance = null;
+
+const { currentPage, perPage, paginateItems, changePage, changePerPage } = usePagination(25);
 
 const campiFiltrados = computed(() => {
   if (!buscaRapida.value) return campi.value;
@@ -149,24 +205,30 @@ const campiFiltrados = computed(() => {
   const termo = buscaRapida.value.toLowerCase();
   return campi.value.filter(campus => 
     campus.nome?.toLowerCase().includes(termo) ||
-    campus.instituicao?.nome_fantasia.toLowerCase().includes(termo)
+    campus.instituicao?.razao_social?.toLowerCase().includes(termo)
   );
 });
 
-watch(selectedGestor, (newGestor) => {
-    form.value.gerente_unidade_id = newGestor ? (newGestor.user_id || newGestor.id) : null;
+const campiPaginados = computed(() => {
+  return paginateItems(campiFiltrados.value);
 });
 
+watch(buscaRapida, () => {
+  currentPage.value = 1;
+});
+
+const exportColumns = [
+  { key: 'nome', label: 'Nome do Campus' },
+  { key: 'instituicao.razao_social', label: 'Instituição' },
+  { key: 'endereco_completo', label: 'Endereço' }
+];
+
 const resetForm = () => {
-    form.value = {
-        instituicao_id: null,
-        nome: '',
-        endereco_completo: '',
-        gerente_unidade_id: null,
-        status: 'Ativo',
-    };
-    selectedGestor.value = null;
-    gestorOptions.value = [];
+  form.value = {
+    instituicao_id: null,
+    nome: '',
+    endereco_completo: ''
+  };
 };
 
 const fetchCampi = async () => {
@@ -174,10 +236,10 @@ const fetchCampi = async () => {
     loading.value = true;
     const response = await axios.get('/api/v1/campi');
     campi.value = response.data;
-  } catch (error) { 
-    console.error("Erro ao buscar campi:", error); 
-  } finally { 
-    loading.value = false; 
+  } catch (error) {
+    console.error('Erro ao buscar campi:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -185,23 +247,8 @@ const fetchInstituicoes = async () => {
   try {
     const response = await axios.get('/api/v1/instituicoes');
     instituicoes.value = response.data;
-  } catch (error) { 
-    console.error("Erro ao buscar instituições:", error); 
-  }
-};
-
-const fetchGestores = (search, loading) => {
-  if (search && search.length) {
-    loading(true);
-    axios.get(`/api/v1/colaboradores?search=${search}`)
-      .then(response => {
-        gestorOptions.value = response.data;
-      })
-      .catch(error => {
-        console.error("Erro ao buscar colaboradores:", error);
-        gestorOptions.value = [];
-      })
-      .finally(() => loading(false));
+  } catch (error) {
+    console.error('Erro ao buscar instituições:', error);
   }
 };
 
@@ -216,19 +263,6 @@ const showEditForm = (campus) => {
   isEditing.value = true;
   editingId.value = campus.id;
   form.value = { ...campus };
-  
-  if (campus.gerente_unidade) {
-      selectedGestor.value = {
-          id: campus.gerente_unidade.id,
-          name: campus.gerente_unidade.name,
-          usuario: campus.gerente_unidade
-      };
-      gestorOptions.value = [selectedGestor.value];
-  } else {
-      selectedGestor.value = null;
-      gestorOptions.value = [];
-  }
-  
   showForm.value = true;
 };
 
@@ -242,8 +276,8 @@ const createCampus = async () => {
     await axios.post('/api/v1/campi', form.value);
     await fetchCampi();
     hideForm();
-  } catch (error) { 
-    console.error("Erro ao criar campus:", error);
+  } catch (error) {
+    console.error('Erro ao criar campus:', error);
     alert('Erro ao criar campus. Verifique os dados e tente novamente.');
   }
 };
@@ -253,8 +287,8 @@ const updateCampus = async () => {
     await axios.put(`/api/v1/campi/${editingId.value}`, form.value);
     await fetchCampi();
     hideForm();
-  } catch (error) { 
-    console.error("Erro ao atualizar campus:", error);
+  } catch (error) {
+    console.error('Erro ao atualizar campus:', error);
     alert('Erro ao atualizar campus. Verifique os dados e tente novamente.');
   }
 };
@@ -269,9 +303,9 @@ const confirmDelete = async () => {
     await axios.delete(`/api/v1/campi/${itemToDelete.value.id}`);
     await fetchCampi();
     itemToDelete.value = null;
-  } catch (error) { 
-    console.error("Erro ao excluir campus:", error);
-    alert('Erro ao excluir campus. Pode haver registros vinculados (cursos, turmas).');
+  } catch (error) {
+    console.error('Erro ao excluir campus:', error);
+    alert('Erro ao excluir campus. Pode haver registros vinculados (setores).');
   }
 };
 
@@ -285,3 +319,41 @@ onMounted(() => {
   }
 });
 </script>
+
+<style scoped>
+.info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.info-item i {
+  color: rgba(102, 126, 234, 0.8);
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.info-item .label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.info-item .value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+</style>

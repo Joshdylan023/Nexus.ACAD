@@ -4,10 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Instituicao extends Model
 {
@@ -16,44 +12,52 @@ class Instituicao extends Model
     protected $table = 'instituicoes';
 
     protected $fillable = [
-        'mantenedora_id',
         'razao_social',
-        'nome_fantasia',
         'cnpj',
+        'nome_fantasia',
+        'sigla',
         'tipo_organizacao_academica',
-        'reitor_id',
+        'categoria_administrativa',
+        'codigo_mec',
         'endereco_sede',
         'status',
-        'codigo_sap',
-        'codigo_emec',
+        'mantenedora_id',
+        'reitor_id',
+        'logradouro',
+        'numero',
+        'complemento',
+        'bairro',
+        'cidade',
+        'estado',
+        'cep'
     ];
 
-    protected $appends = ['nome'];
-
-    public function getNomeAttribute()
-    {
-        return $this->nome_fantasia ?? $this->razao_social;
-    }
-
-    public function mantenedora(): BelongsTo
+    // Relacionamentos
+    public function mantenedora()
     {
         return $this->belongsTo(Mantenedora::class);
     }
 
-    public function reitor(): BelongsTo
+    public function reitor()
     {
         return $this->belongsTo(User::class, 'reitor_id');
     }
 
-    public function campi(): HasMany
+    public function campi()
     {
         return $this->hasMany(Campus::class);
     }
 
-    /**
-     * Retorna todos os vínculos de setor para esta instituição.
-     */
-    public function setorVinculos(): MorphMany
+    public function atosRegulatorios()
+    {
+        return $this->hasMany(InstituicaoAtoRegulatorio::class);
+    }
+
+    public function setores()
+    {
+        return $this->morphToMany(Setor::class, 'setorable');
+    }
+    public function setorVinculos()
     {
         return $this->morphMany(SetorVinculo::class, 'vinculavel');
     }
