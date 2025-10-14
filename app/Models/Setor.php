@@ -8,14 +8,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphedByMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Traits\Auditable;
 
 class Setor extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // ← ADICIONE O TRAIT AUDITABLE
 
     protected $table = 'setores';
 
     protected $fillable = ['nome', 'sigla', 'tipo'];
+
+    // ← ADICIONE: Carregar relacionamentos de auditoria automaticamente
+    protected $with = ['creator', 'updater'];
 
     public function pai(): BelongsTo
     {

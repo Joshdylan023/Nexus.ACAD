@@ -69,4 +69,32 @@ class InstituicaoAtoRegulatorioController extends Controller
         $atoRegulatorio->delete();
         return response()->json(null, 204);
     }
+    public function alertas()
+{
+    $hoje = now();
+    
+    // Atos vencidos
+    $vencidos = InstituicaoAtoRegulatorio::with(['instituicao', 'creator', 'updater'])
+        ->where('data_validade_ato', '<', $hoje)
+        ->orderBy('data_validade_ato', 'asc')
+        ->get();
+    
+    // Atos a vencer em até 30 dias
+    $aVencer30 = InstituicaoAtoRegulatorio::with(['instituicao', 'creator', 'updater'])
+        ->whereBetween('data_validade_ato', [$hoje, $hoje->copy()->addDays(30)])
+        ->orderBy('data_validade_ato', 'asc')
+        ->get();
+    
+    // Atos vigentes (vigência futura além de 30 dias)
+    $vigentes = InstituicaoAtoRegulatorio::with(['instituicao', 'creator', 'updater'])
+        ->where('data_validade_ato', '>', $hoje->copy()->addDays(30))
+        ->count();
+    
+    return response()->json([
+        'vencidos' => $vencidos,
+        'a_vencer_30_dias' => $aVencer30,
+        'vigentes_count' => $vigentes,
+        'total' => InstituicaoAtoRegulatorio::count(),
+    ]);
+}
 }

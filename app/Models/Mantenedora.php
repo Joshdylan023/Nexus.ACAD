@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Traits\Auditable;
+use App\Traits\HasIdentidadeVisual;
+
 
 class Mantenedora extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
+    use HasIdentidadeVisual;// ← ADICIONE O TRAIT AUDITABLE
 
     protected $table = 'mantenedoras';
 
@@ -24,6 +28,9 @@ class Mantenedora extends Model
     ];
 
     protected $appends = ['nome'];
+
+    // ← ADICIONE: Carregar relacionamentos de auditoria automaticamente
+    protected $with = ['creator', 'updater'];
 
     public function getNomeAttribute()
     {

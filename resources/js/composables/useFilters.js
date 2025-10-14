@@ -1,86 +1,87 @@
-import { ref, computed } from 'vue';
+import { ref, computed, isRef } from 'vue';
 
-export function useFilters(initialFilters = {}) {
-  const filters = ref({ ...initialFilters });
+export function useFilters(items, filterConfig) {
+  const activeFilters = ref({});
   const showFilters = ref(false);
 
-  /**
-   * Conta quantos filtros estão ativos
-   */
-  const activeFiltersCount = computed(() => {
-    return Object.values(filters.value).filter(value => {
-      if (Array.isArray(value)) return value.length > 0;
-      if (typeof value === 'string') return value !== '';
-      if (typeof value === 'number') return value !== null && value !== undefined;
-      return value !== null && value !== undefined && value !== '';
-    }).length;
-  });
+  // Aplicar filtros
+  const filteredItems = computed(() => {
+    let result = items.value || [];
 
-  /**
-   * Aplica múltiplos filtros em um array de dados
-   */
-  const applyFilters = (data, filterFunctions) => {
-    let filtered = [...data];
-
-    Object.keys(filters.value).forEach(key => {
-      const filterValue = filters.value[key];
+    Object.keys(activeFilters.value).forEach(filterKey => {
+      const filterValue = activeFilters.value[filterKey];
       
-      // Pula filtros vazios
       if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) {
         return;
       }
 
-      // Aplica a função de filtro correspondente se existir
-      if (filterFunctions[key]) {
-        filtered = filtered.filter(item => filterFunctions[key](item, filterValue));
-      }
+      const configArray = isRef(filterConfig) ? filterConfig.value : filterConfig;
+      const config = (configArray || []).find(f => f.key === filterKey);
+      if (!config) return;
+
+      result = result.filter(item => {
+        const itemValue = getNestedValue(item, config.key);
+
+        if (Array.isArray(filterValue)) {
+          // Filtro multi-select
+          return filterValue.includes(itemValue);
+        } else if (typeof filterValue === 'string') {
+          // Filtro texto
+          return itemValue?.toLowerCase().includes(filterValue.toLowerCase());
+        } else if (typeof filterValue === 'object' && filterValue.min !== undefined) {
+          // Filtro range
+          const val = parseFloat(itemValue);
+          return val >= filterValue.min && val <= filterValue.max;
+        }
+        
+        return true;
+      });
     });
 
-    return filtered;
-  };
-
-  /**
-   * Limpa todos os filtros
-   */
-  const clearFilters = () => {
-    Object.keys(filters.value).forEach(key => {
-      if (Array.isArray(filters.value[key])) {
-        filters.value[key] = [];
-      } else {
-        filters.value[key] = '';
-      }
-    });
-  };
-
-  /**
-   * Define um filtro específico
-   */
-  const setFilter = (key, value) => {
-    filters.value[key] = value;
-  };
-
-  /**
-   * Obtém um filtro específico
-   */
-  const getFilter = (key) => {
-    return filters.value[key];
-  };
-
-  /**
-   * Verifica se algum filtro está ativo
-   */
-  const hasActiveFilters = computed(() => {
-    return activeFiltersCount.value > 0;
+    return result;
   });
 
+  // Helper para acessar valores aninhados (ex: "instituicao.status")
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, part) => acc?.[part], obj);
+  };
+
+  // Aplicar filtro
+  const applyFilter = (key, value) => {
+    activeFilters.value[key] = value;
+  };
+
+  // Limpar um filtro específico
+  const clearFilter = (key) => {
+    delete activeFilters.value[key];
+  };
+
+  // Limpar todos os filtros
+  const clearAllFilters = () => {
+    activeFilters.value = {};
+  };
+
+  // Contar filtros ativos
+  const activeFilterCount = computed(() => {
+    return Object.keys(activeFilters.value).filter(key => {
+      const value = activeFilters.value[key];
+      return value && (!Array.isArray(value) || value.length > 0);
+    }).length;
+  });
+
+  // Toggle painel de filtros
+  const toggleFilters = () => {
+    showFilters.value = !showFilters.value;
+  };
+
   return {
-    filters,
+    activeFilters,
+    filteredItems,
     showFilters,
-    activeFiltersCount,
-    hasActiveFilters,
-    applyFilters,
-    clearFilters,
-    setFilter,
-    getFilter
+    applyFilter,
+    clearFilter,
+    clearAllFilters,
+    activeFilterCount,
+    toggleFilters
   };
 }

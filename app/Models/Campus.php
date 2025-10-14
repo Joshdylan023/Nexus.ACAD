@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use App\Traits\Auditable;
 
 class Campus extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // ← ADICIONE O TRAIT AUDITABLE
 
     protected $table = 'campi';
     
@@ -20,6 +21,9 @@ class Campus extends Model
         'gerente_unidade_id',
         'status',
     ];
+
+    // ← ADICIONE: Carregar relacionamentos de auditoria automaticamente
+    protected $with = ['creator', 'updater'];
 
     public function instituicao(): BelongsTo
     {

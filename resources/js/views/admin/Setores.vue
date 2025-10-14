@@ -67,15 +67,35 @@
               <th class="ps-4">Nome do Setor</th>
               <th>Sigla</th>
               <th>Tipo</th>
+              <th>Auditoria</th>
               <th class="text-center">Ações</th>
             </tr>
           </thead>
-          <TableSkeleton v-if="loading" :columns="4" :rows="5" />
+          <TableSkeleton v-if="loading" :columns="5" :rows="5" />
           <tbody v-else>
             <tr v-for="setor in setoresPaginados" :key="setor.id">
               <td class="ps-4">{{ setor.nome }}</td>
               <td>{{ setor.sigla }}</td>
               <td><StatusBadge :status="setor.tipo" type="tipo" /></td>
+              <td>
+                <div class="audit-info-compact">
+                  <small>
+                    <i class="bi bi-person-plus text-success me-1"></i>
+                    <strong>{{ setor.creator?.name || (setor.created_by ? 'ID: ' + setor.created_by : 'Sistema') }}</strong>
+                    <br>
+                    <i class="bi bi-clock text-muted me-1"></i>
+                    {{ formatDate(setor.created_at) }}
+                    <template v-if="setor.updated_at !== setor.created_at">
+                      <br>
+                      <i class="bi bi-pencil text-warning me-1"></i>
+                      <strong>{{ setor.updater?.name || (setor.updated_by ? 'ID: ' + setor.updated_by : 'Sistema') }}</strong>
+                      <br>
+                      <i class="bi bi-clock text-muted me-1"></i>
+                      {{ formatDate(setor.updated_at) }}
+                    </template>
+                  </small>
+                </div>
+              </td>
               <td class="text-center">
                 <button @click="showEditForm(setor)" class="btn btn-sm btn-primary me-2" title="Editar Setor">
                   <i class="bi bi-pencil"></i>
@@ -86,7 +106,7 @@
               </td>
             </tr>
             <tr v-if="setoresFiltrados.length === 0">
-              <td colspan="4" class="text-center text-muted py-4">
+              <td colspan="5" class="text-center text-muted py-4">
                 {{ buscaRapida ? 'Nenhum resultado encontrado.' : 'Nenhum setor encontrado.' }}
               </td>
             </tr>
@@ -138,6 +158,44 @@
               <span class="label">ID:</span>
               <span class="value">{{ item.id }}</span>
             </div>
+
+            <!-- AUDITORIA -->
+            <div class="audit-info-card">
+              <div class="audit-header">
+                <i class="bi bi-shield-check me-2"></i>
+                <strong>Informações de Auditoria</strong>
+              </div>
+              <div class="audit-details">
+                <div class="audit-row">
+                  <i class="bi bi-person-plus text-success me-2"></i>
+                  <span class="audit-label">Criado por:</span>
+                  <span class="audit-value">
+                    {{ item.creator?.name || (item.created_by ? 'ID: ' + item.created_by : 'Sistema') }}
+                  </span>
+                </div>
+                <div class="audit-row">
+                  <i class="bi bi-clock text-muted me-2"></i>
+                  <span class="audit-label">Em:</span>
+                  <span class="audit-value">{{ formatDate(item.created_at) }}</span>
+                </div>
+
+                <template v-if="item.updated_at !== item.created_at">
+                  <div class="audit-divider"></div>
+                  <div class="audit-row">
+                    <i class="bi bi-pencil text-warning me-2"></i>
+                    <span class="audit-label">Última atualização:</span>
+                    <span class="audit-value">{{ formatDate(item.updated_at) }}</span>
+                  </div>
+                  <div class="audit-row">
+                    <i class="bi bi-person text-info me-2"></i>
+                    <span class="audit-label">Por:</span>
+                    <span class="audit-value">
+                      {{ item.updater?.name || (item.updated_by ? 'ID: ' + item.updated_by : 'Sistema') }}
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
         </template>
 
@@ -179,6 +237,8 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { Modal } from 'bootstrap';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -226,6 +286,11 @@ const exportColumns = [
   { key: 'sigla', label: 'Sigla' },
   { key: 'tipo', label: 'Tipo' }
 ];
+
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ptBR });
+};
 
 const resetForm = () => {
   form.value = {
@@ -349,5 +414,65 @@ onMounted(() => {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.audit-info-compact {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+.audit-info-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 3px solid rgba(102, 126, 234, 0.6);
+  border-radius: 6px;
+}
+
+.audit-header {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.audit-header i {
+  color: rgba(102, 126, 234, 0.8);
+}
+
+.audit-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.audit-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.audit-row i {
+  flex-shrink: 0;
+}
+
+.audit-label {
+  font-weight: 500;
+  margin-right: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.audit-value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.audit-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.5rem 0;
 }
 </style>

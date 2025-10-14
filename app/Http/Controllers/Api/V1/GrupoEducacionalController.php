@@ -4,51 +4,69 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\GrupoEducacional;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
+use App\Http\Requests\StoreGrupoEducacionalRequest;
+use App\Http\Requests\UpdateGrupoEducacionalRequest;
 
 class GrupoEducacionalController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
-        return response()->json(GrupoEducacional::orderBy('nome')->get());
+        return GrupoEducacional::with(['mantenedoras', 'creator', 'updater'])->get();
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreGrupoEducacionalRequest $request)
     {
-        $validatedData = $request->validate([
-            'nome' => 'required|string|unique:grupos_educacionais|max:255',
-            'cnpj' => 'nullable|string|unique:grupos_educacionais,cnpj|max:18',
-            'endereco_completo' => 'nullable|string',  // ← ADICIONADO
-            'representante_legal' => 'nullable|string|max:255',
-        ]);
+        $grupo = GrupoEducacional::create($request->validated());
         
-        $grupo = GrupoEducacional::create($validatedData);
-        return response()->json(['message' => 'Grupo Educacional criado com sucesso!', 'data' => $grupo], 201);
+        // NOTIFICAÇÃO AUTOMÁTICA
+        \App\Helpers\NotificationHelper::notifyByRole(
+            'admin',
+            'success',
+            '✅ Novo Grupo Educacional Criado',
+            "O grupo '{$grupo->nome}' foi cadastrado por " . auth()->user()->name,
+            'new_grupo',
+            "/admin/institucional/grupos-educacionais"
+        );
+
+        return response()->json($grupo->load(['creator', 'updater']), 201);
     }
 
-    public function show(GrupoEducacional $grupo): JsonResponse
+    public function show(GrupoEducacional $grupo)
     {
-        return response()->json($grupo);
+        return $grupo->load(['mantenedoras', 'creator', 'updater']);
     }
 
-    public function update(Request $request, GrupoEducacional $grupo): JsonResponse
+    public function update(UpdateGrupoEducacionalRequest $request, GrupoEducacional $grupo)
     {
-        $validatedData = $request->validate([
-            'nome' => ['required', 'string', Rule::unique('grupos_educacionais')->ignore($grupo->id), 'max:255'],
-            'cnpj' => ['nullable', 'string', Rule::unique('grupos_educacionais')->ignore($grupo->id), 'max:18'],
-            'endereco_completo' => 'nullable|string',  // ← ADICIONADO
-            'representante_legal' => 'nullable|string|max:255',
-        ]);
+        $grupo->update($request->validated());
         
-        $grupo->update($validatedData);
-        return response()->json(['message' => 'Grupo Educacional atualizado com sucesso!', 'data' => $grupo]);
+        // NOTIFICAÇÃO AUTOMÁTICA
+        \App\Helpers\NotificationHelper::notifyByRole(
+            'admin',
+            'info',
+            '📝 Grupo Educacional Atualizado',
+            "O grupo '{$grupo->nome}' foi atualizado por " . auth()->user()->name,
+            'update_grupo',
+            "/admin/institucional/grupos-educacionais"
+        );
+
+        return response()->json($grupo->load(['creator', 'updater']));
     }
 
-    public function destroy(GrupoEducacional $grupo): JsonResponse
+    public function destroy(GrupoEducacional $grupo)
     {
+        $nomeGrupo = $grupo->nome;
         $grupo->delete();
-        return response()->json(null, 204);
+        
+        // NOTIFICAÇÃO AUTOMÁTICA
+        \App\Helpers\NotificationHelper::notifyByRole(
+            'admin',
+            'warning',
+            '🗑️ Grupo Educacional Excluído',
+            "O grupo '{$nomeGrupo}' foi excluído por " . auth()->user()->name,
+            'delete_grupo'
+        );
+
+        return response()->json(['message' => 'Grupo excluído com sucesso']);
     }
 }

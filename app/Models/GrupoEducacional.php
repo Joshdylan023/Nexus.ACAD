@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use App\Traits\Auditable;
+use App\Traits\HasIdentidadeVisual;
+
 
 class GrupoEducacional extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // ← ADICIONE O TRAIT AUDITABLE
+    use HasIdentidadeVisual; // ← ADICIONE O TRAIT VISUAL
+
 
     protected $table = 'grupos_educacionais';
 
@@ -20,6 +25,9 @@ class GrupoEducacional extends Model
         'endereco_completo',
         'representante_legal',
     ];
+
+    // ← ADICIONE: Carregar relacionamentos de auditoria automaticamente
+    protected $with = ['creator', 'updater'];
 
     public function mantenedoras(): HasMany
     {

@@ -41,9 +41,13 @@ const handleLogin = async () => {
   try {
     const response = await axios.post('/api/login', form.value);
     
-    localStorage.setItem('authToken', response.data.access_token);
-    // Redireciona para a primeira página do módulo institucional após o login
-    router.push('/admin/institucional/grupos-educacionais');
+    const token = response.data.access_token;
+    
+    // Salvar token
+    localStorage.setItem('authToken', token);
+    
+    // Recarregar a página para garantir que todas as instâncias do Axios tenham o token
+    window.location.href = '/admin/institucional/grupos-educacionais';
 
   } catch (error) {
     if (error.response && error.response.status === 401) {

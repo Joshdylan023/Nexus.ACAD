@@ -4,78 +4,36 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mantenedora;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use App\Http\Requests\StoreMantenedoraRequest;
+use App\Http\Requests\UpdateMantenedoraRequest;
 
 class MantenedoraController extends Controller
 {
-    /**
-     * Exibe uma lista de todas as Mantenedoras.
-     */
-    public function index(): JsonResponse
+    public function index()
     {
-        $mantenedoras = Mantenedora::with('grupoEducacional')->get();
-
-        return response()->json($mantenedoras);
+        return Mantenedora::with(['grupoEducacional', 'instituicoes', 'creator', 'updater'])->get();
     }
 
-    /**
-     * Armazena uma nova Mantenedora.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreMantenedoraRequest $request)
     {
-        $validatedData = $request->validate([
-            'grupo_educacional_id' => 'nullable|exists:grupos_educacionais,id',
-            'razao_social' => 'required|string|max:255',
-            'nome_fantasia' => 'nullable|string|max:255',
-            'cnpj' => 'required|string|unique:mantenedoras,cnpj|max:18',
-            'endereco_completo' => 'nullable|string',
-            'representante_legal' => 'nullable|string|max:255',
-        ]);
-        $mantenedora = Mantenedora::create($validatedData);
-
-        return response()->json(['message' => 'Mantenedora criada com sucesso!', 'data' => $mantenedora->load('grupoEducacional')], 201);
+        $mantenedora = Mantenedora::create($request->validated());
+        return response()->json($mantenedora->load(['grupoEducacional', 'creator', 'updater']), 201);
     }
 
-    /**
-     * Exibe os detalhes de uma Mantenedora específica.
-     */
-    public function show(Mantenedora $mantenedora): JsonResponse
+    public function show(Mantenedora $mantenedora)
     {
-        return response()->json($mantenedora->load('grupoEducacional'));
+        return $mantenedora->load(['grupoEducacional', 'instituicoes', 'creator', 'updater']);
     }
 
-    /**
-     * Atualiza os dados de uma Mantenedora existente.
-     */
-    public function update(Request $request, Mantenedora $mantenedora): JsonResponse
+    public function update(UpdateMantenedoraRequest $request, Mantenedora $mantenedora)
     {
-        $validatedData = $request->validate([
-            'grupo_educacional_id' => 'nullable|exists:grupos_educacionais,id',
-            'razao_social' => 'required|string|max:255',
-            'nome_fantasia' => 'nullable|string|max:255',
-            'cnpj' => [
-                'required',
-                'string',
-                Rule::unique('mantenedoras')->ignore($mantenedora->id),
-                'max:18',
-            ],
-            'endereco_completo' => 'nullable|string',
-            'representante_legal' => 'nullable|string|max:255',
-        ]);
-        $mantenedora->update($validatedData);
-
-        return response()->json(['message' => 'Mantenedora atualizada com sucesso!', 'data' => $mantenedora->load('grupoEducacional')]);
+        $mantenedora->update($request->validated());
+        return response()->json($mantenedora->load(['grupoEducacional', 'creator', 'updater']));
     }
 
-    /**
-     * Remove uma Mantenedora.
-     */
-    public function destroy(Mantenedora $mantenedora): JsonResponse
+    public function destroy(Mantenedora $mantenedora)
     {
         $mantenedora->delete();
-
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Mantenedora excluída com sucesso']);
     }
 }

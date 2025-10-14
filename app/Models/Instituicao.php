@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
+use App\Traits\HasIdentidadeVisual;
+
 
 class Instituicao extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable; // ← ADICIONE O TRAIT AUDITABLE
+    use HasIdentidadeVisual;
 
     protected $table = 'instituicoes';
 
@@ -31,6 +35,9 @@ class Instituicao extends Model
         'estado',
         'cep'
     ];
+
+    // ← ADICIONE: Carregar relacionamentos de auditoria automaticamente
+    protected $with = ['creator', 'updater'];
 
     // Relacionamentos
     public function mantenedora()
@@ -57,6 +64,7 @@ class Instituicao extends Model
     {
         return $this->morphToMany(Setor::class, 'setorable');
     }
+
     public function setorVinculos()
     {
         return $this->morphMany(SetorVinculo::class, 'vinculavel');

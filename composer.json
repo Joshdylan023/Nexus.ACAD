@@ -7,11 +7,11 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.0",
+        "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
-        "maatwebsite/excel": "^1.1",
-        "phpoffice/phpspreadsheet": "1.29",
+        "phpoffice/phpspreadsheet": "^5.1",
         "spatie/laravel-permission": "^6.7"
     },
     "require-dev": {
@@ -24,13 +24,16 @@
         "pestphp/pest-plugin-laravel": "^2.4",
         "phpunit/phpunit": "^10.5"
     },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
-        }
+   "autoload": {
+    "psr-4": {
+        "App\\": "app/",
+        "Database\\Factories\\": "database/factories/",
+        "Database\\Seeders\\": "database/seeders/"
     },
+    "files": [
+        "app/Helpers/NotificationHelper.php"
+    ]
+},
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"

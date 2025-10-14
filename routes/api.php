@@ -33,6 +33,11 @@ use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Controllers\Api\V1\ImportTemplateController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\GlobalSearchController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\Api\V1\IdentidadeVisualController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -49,8 +54,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    
+    // BROADCASTING AUTH
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
 
     Route::prefix('v1')->group(function () {
+        
+        // BUSCA GLOBAL
+        Route::get('search', [GlobalSearchController::class, 'search']);
+        
+        // ============================================
+        // MÓDULO: NOTIFICAÇÕES (ATUALIZADO)
+        // ============================================
+        Route::prefix('notifications')->group(function () {
+            // Rotas básicas
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+            Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
+            Route::delete('/{id}', [NotificationController::class, 'destroy']);
+            
+            // Novas funcionalidades
+            Route::get('/preferences', [NotificationController::class, 'getPreferences']);
+            Route::post('/preferences', [NotificationController::class, 'updatePreferences']);
+            Route::get('/stats', [NotificationController::class, 'getStats']);
+            Route::delete('/clear-read', [NotificationController::class, 'clearRead']);
+        });
         
         // ROTA PARA BUSCAR USUÁRIOS (para select de eventos)
         Route::get('/users', [UserController::class, 'index']);
@@ -60,7 +88,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/colaboradores/{id}', [ColaboradorController::class, 'show']);
         Route::get('/users/colaboradores', [UserController::class, 'colaboradores']);
         Route::get('users/search', [UserController::class, 'search']);
-
         
         Route::middleware('can:gerenciar-acessos')->group(function () {
             Route::post('/colaboradores', [ColaboradorController::class, 'store']);
@@ -93,51 +120,47 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // MÓDULO: GESTÃO INSTITUCIONAL
-        Route::middleware('can:gerenciar-institucional')->group(function () {
-            Route::apiResource('/grupos-educacionais', GrupoEducacionalController::class)->parameters(['grupos-educacionais' => 'grupo']);
-            Route::apiResource('/mantenedoras', MantenedoraController::class)->parameters(['mantenedoras' => 'mantenedora']);
-            Route::apiResource('/instituicoes', InstituicaoController::class)->parameters(['instituicoes' => 'instituicao']);
-            Route::apiResource('/instituicao-atos-regulatorios', InstituicaoAtoRegulatorioController::class)->parameters(['instituicao-atos-regulatorios' => 'atoRegulatorio']);
-            Route::apiResource('/campi', CampusController::class)->parameters(['campi' => 'campus']);
-            Route::apiResource('/setores', SetorController::class)->parameters(['setores' => 'setor']);
+Route::middleware('can:gerenciar-institucional')->group(function () {
+    Route::apiResource('/grupos-educacionais', GrupoEducacionalController::class)->parameters(['grupos-educacionais' => 'grupo']);
+    Route::apiResource('/mantenedoras', MantenedoraController::class)->parameters(['mantenedoras' => 'mantenedora']);
+    
+    // ⭐ Export ANTES do resource
+    Route::get('/instituicoes/export', [InstituicaoController::class, 'export']);
+    Route::apiResource('/instituicoes', InstituicaoController::class)->parameters(['instituicoes' => 'instituicao']);
+    
+    // ⭐ ATOS REGULATÓRIOS + ALERTAS
+    Route::get('/atos-regulatorios/alertas', [InstituicaoAtoRegulatorioController::class, 'alertas']);
+    Route::apiResource('/instituicao-atos-regulatorios', InstituicaoAtoRegulatorioController::class)->parameters(['instituicao-atos-regulatorios' => 'atoRegulatorio']);
+    
+    Route::apiResource('/campi', CampusController::class)->parameters(['campi' => 'campus']);
+    Route::apiResource('/setores', SetorController::class)->parameters(['setores' => 'setor']);
 
-            // Rotas para Setores do Grupo Educacional
-            Route::get('/grupos-educacionais/{grupoEducacional}/setores', [GrupoEducacionalSetorController::class, 'index']);
-            Route::post('/grupos-educacionais/{grupoEducacional}/setores', [GrupoEducacionalSetorController::class, 'store']);
-            Route::put('/grupos-educacionais/{grupoEducacional}/setores/{setorId}', [GrupoEducacionalSetorController::class, 'update']);
-            Route::delete('/grupos-educacionais/{grupoEducacional}/setores/{setorId}', [GrupoEducacionalSetorController::class, 'destroy']);
+    // Rotas para Setores do Grupo Educacional
+    Route::get('/grupos-educacionais/{grupoEducacional}/setores', [GrupoEducacionalSetorController::class, 'index']);
+    Route::post('/grupos-educacionais/{grupoEducacional}/setores', [GrupoEducacionalSetorController::class, 'store']);
+    Route::put('/grupos-educacionais/{grupoEducacional}/setores/{setorId}', [GrupoEducacionalSetorController::class, 'update']);
+    Route::delete('/grupos-educacionais/{grupoEducacional}/setores/{setorId}', [GrupoEducacionalSetorController::class, 'destroy']);
 
-            // Rotas para Setores da Mantenedora
-            Route::get('/mantenedoras/{mantenedora}/setores', [MantenedoraSetorController::class, 'index']);
-            Route::post('/mantenedoras/{mantenedora}/setores', [MantenedoraSetorController::class, 'store']);
-            Route::put('/mantenedoras/{mantenedora}/setores/{setorId}', [MantenedoraSetorController::class, 'update']);
-            Route::delete('/mantenedoras/{mantenedora}/setores/{setorId}', [MantenedoraSetorController::class, 'destroy']);
+    // Rotas para Setores da Mantenedora
+    Route::get('/mantenedoras/{mantenedora}/setores', [MantenedoraSetorController::class, 'index']);
+    Route::post('/mantenedoras/{mantenedora}/setores', [MantenedoraSetorController::class, 'store']);
+    Route::put('/mantenedoras/{mantenedora}/setores/{setorId}', [MantenedoraSetorController::class, 'update']);
+    Route::delete('/mantenedoras/{mantenedora}/setores/{setorId}', [MantenedoraSetorController::class, 'destroy']);
 
-            // Rotas para Setores da Instituição
-            Route::get('/instituicoes/{instituicao}/setores', [InstituicaoSetorController::class, 'index']);
-            Route::post('/instituicoes/{instituicao}/setores', [InstituicaoSetorController::class, 'store']);
-            Route::put('/instituicoes/{instituicao}/setores/{setorId}', [InstituicaoSetorController::class, 'update']);
-            Route::delete('/instituicoes/{instituicao}/setores/{setorId}', [InstituicaoSetorController::class, 'destroy']);
+    // Rotas para Setores da Instituição
+    Route::get('/instituicoes/{instituicao}/setores', [InstituicaoSetorController::class, 'index']);
+    Route::post('/instituicoes/{instituicao}/setores', [InstituicaoSetorController::class, 'store']);
+    Route::put('/instituicoes/{instituicao}/setores/{setorId}', [InstituicaoSetorController::class, 'update']);
+    Route::delete('/instituicoes/{instituicao}/setores/{setorId}', [InstituicaoSetorController::class, 'destroy']);
+    // ❌ REMOVA ESTA LINHA DUPLICADA:
+    // Route::get('/instituicoes/export', [InstituicaoController::class, 'export']);
 
-            // Rotas para Setores do Campus
-            Route::get('/campi/{campus}/setores', [CampusSetorController::class, 'index']);
-            Route::post('/campi/{campus}/setores', [CampusSetorController::class, 'store']);
-            Route::put('/campi/{campus}/setores/{setorId}', [CampusSetorController::class, 'update']);
-            Route::delete('/campi/{campus}/setores/{setorId}', [CampusSetorController::class, 'destroy']);
-            
-            // Rota para listar todos os vínculos para selects
-            Route::get('/setor-vinculos/all', [SetorVinculoController::class, 'all']);
-            Route::apiResource('/setor-vinculos', SetorVinculoController::class)->parameters(['setor-vinculos' => 'setorVinculo']);
-
-            // MÓDULO: GESTÃO DE EVENTOS DO SISTEMA
-            Route::prefix('system-events')->group(function () {
-                Route::get('/', [SystemEventController::class, 'index']);
-                Route::post('/', [SystemEventController::class, 'store']);
-                Route::get('/current', [SystemEventController::class, 'current']);
-                Route::post('/{id}/activate', [SystemEventController::class, 'activate']);
-                Route::post('/{id}/deactivate', [SystemEventController::class, 'deactivate']);
-                Route::delete('/{id}', [SystemEventController::class, 'destroy']);
-            });
+    // Rotas para Setores do Campus
+    Route::get('/campi/{campus}/setores', [CampusSetorController::class, 'index']);
+    Route::post('/campi/{campus}/setores', [CampusSetorController::class, 'store']);
+    Route::put('/campi/{campus}/setores/{setorId}', [CampusSetorController::class, 'update']);
+    Route::delete('/campi/{campus}/setores/{setorId}', [CampusSetorController::class, 'destroy']);
+    
 
             // MÓDULO: IMPORTAÇÃO EM MASSA
             Route::prefix('imports')->group(function () {
@@ -154,17 +177,25 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/{id}', [ImportController::class, 'show']);
             });
 
-            // MÓDULO: DASHBOARD (FORA DO GRUPO DE IMPORTS)
+            // MÓDULO: DASHBOARD
             Route::prefix('dashboard')->group(function () {
                 Route::get('/institucional', [DashboardController::class, 'institucional']);
             });
-
-            // MÓDULO: BUSCA GLOBAL
-            Route::prefix('global-search')->group(function () {
-                // Busca Global
-                Route::get('search', [GlobalSearchController::class, 'search']);
-
-            });
         });
+
+        // ⭐ IDENTIDADE VISUAL
+Route::prefix('identidade-visual')->group(function () {
+    Route::get('/show', [IdentidadeVisualController::class, 'show']);
+    Route::post('/store', [IdentidadeVisualController::class, 'store']);
+    Route::post('/upload-logo', [IdentidadeVisualController::class, 'uploadLogo']);
+    Route::delete('/delete-logo', [IdentidadeVisualController::class, 'deleteLogo']);
+    Route::get('/entidades', [IdentidadeVisualController::class, 'listarEntidades']);
+});
+
+        // MÓDULO: RELATÓRIOS (FORA DO GRUPO INSTITUCIONAL)
+        Route::apiResource('reports', ReportController::class);
+        Route::post('reports/{id}/execute', [ReportController::class, 'execute']);
+        Route::get('reports/{id}/export', [ReportController::class, 'export']);
+        Route::get('reports/columns/{type}', [ReportController::class, 'getAvailableColumns']);
     });
 });

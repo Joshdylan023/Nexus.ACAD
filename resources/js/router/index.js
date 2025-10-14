@@ -17,7 +17,6 @@ import Campi from '../views/admin/Campi.vue';
 import CampusSetores from '../views/admin/CampusSetores.vue';
 import Setores from '../views/admin/Setores.vue';
 
-
 // Gestão Acadêmica
 import GrandeAreas from '../views/admin/GrandeAreas.vue';
 import AreasConhecimento from '../views/admin/AreasConhecimento.vue';
@@ -47,6 +46,7 @@ const routes = [
     component: AdminLayout,
     children: [
       { path: '', redirect: '/admin/institucional' },
+      
       // Módulo: Gestão Institucional
       {
         path: 'institucional',
@@ -66,45 +66,79 @@ const routes = [
       },
 
       // Hierarquia Institucional
+      {
+        path: '/admin/institucional/hierarquia',
+        name: 'HierarchyView',
+        component: () => import('@/pages/Institucional/HierarchyView.vue'),
+        meta: { requiresAuth: true }
+      },
 
-{
-  path: '/admin/institucional/hierarquia',
-  name: 'HierarchyView',
-  component: () => import('@/pages/Institucional/HierarchyView.vue'),
-  meta: { requiresAuth: true }
-},
+      // Dashboard Institucional
+      {
+        path: '/admin/institucional/dashboard',
+        name: 'DashboardInstitucional',
+        component: () => import('@/pages/Institucional/DashboardInstitucional.vue'),
+        meta: { requiresAuth: true }
+      },
 
-// Dashboard Institucional
+      {
+        path: '/admin/institucional/system-events',
+        name: 'SystemEvents',
+        component: () => import('@/pages/Institucional/SystemEvents.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/admin/institucional/bulk-import',
+        name: 'BulkImport',
+        component: () => import('@/pages/Institucional/BulkImport.vue'),
+        meta: { requiresAuth: true }
+      },
 
-{
-  path: '/admin/institucional/dashboard',
-  name: 'DashboardInstitucional',
-  component: () => import('@/pages/Institucional/DashboardInstitucional.vue'),
-  meta: { requiresAuth: true }
-},
+      // Módulo: Relatórios e Análises
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('@/pages/Reports/Reports.vue'),
+        meta: { requiresAuth: true }
+      },
 
-{
-  path: '/admin/institucional/system-events',
-  name: 'SystemEvents',
-  component: () => import('@/pages/Institucional/SystemEvents.vue'),
-  meta: { requiresAuth: true }
-},
-{
-  path: '/admin/institucional/bulk-import',
-  name: 'BulkImport',
-  component: () => import('@/pages/Institucional/BulkImport.vue'),
-  meta: { requiresAuth: true }
-},
+      // ============================================
+      // MÓDULO: NOTIFICAÇÕES (NOVO)
+      // ============================================
+      {
+        path: 'notificacoes',
+        name: 'Notificacoes',
+        component: () => import('@/pages/Notificacoes/NotificationDashboard.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: 'Central de Notificações'
+        }
+        
+      },
+
+      {
+        path: '/admin/institucional/alertas-regulatorios',
+        name: 'alertas-regulatorios',
+        component: () => import('@/views/admin/AlertasRegulatorios.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+          path: '/admin/institucional/miscelaneas/identidade-visual',
+          name: 'IdentidadeVisual',
+          component: () => import('@/views/admin/institucional/IdentidadeVisual.vue'),
+          meta: { requiresAuth: true }
+      },
 
       // Módulo: Gestão Acadêmica
       {
         path: 'academico',
         children: [
-            // ... (omitted for brevity)
+          // ... (seus componentes acadêmicos)
         ]
       },
+
       // Módulo: Gestão de Professores
-       {
+      {
         path: 'professores',
         children: [
           { path: '', name: 'admin.professores', component: ModuloBoasVindas, props: { modulo: 'Gestão de Professores' } },
@@ -113,6 +147,7 @@ const routes = [
           { path: 'formacao/:id', name: 'admin.professores.formacao', component: ProfessorFormacao, props: true },
         ],
       },
+
       // Módulo: Gestão de Pessoas e Acessos
       {
         path: 'pessoas-acessos',

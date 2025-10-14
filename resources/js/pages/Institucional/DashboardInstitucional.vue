@@ -163,6 +163,48 @@
       </div>
     </div>
 
+       <!-- ⭐ NOVO: ALERTAS REGULATÓRIOS E INFORMAÇÕES -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-4 col-md-6">
+        <AlertasRegulatoriosCard />
+      </div>
+      
+      <div class="col-lg-8 col-md-6">
+        <div class="card card-glass">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              Informações Importantes
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="info-card">
+                  <i class="bi bi-shield-check text-success fs-2"></i>
+                  <h6 class="mt-2">Compliance Regulatório</h6>
+                  <p class="text-muted small mb-0">
+                    Mantenha todos os atos regulatórios atualizados para garantir 
+                    o funcionamento legal da instituição.
+                  </p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-card">
+                  <i class="bi bi-calendar-check text-info fs-2"></i>
+                  <h6 class="mt-2">Renovações Próximas</h6>
+                  <p class="text-muted small mb-0">
+                    Fique atento aos prazos de renovação e recredenciamento 
+                    para evitar problemas com o MEC.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Comparativo Mensal/Anual -->
     <div class="row g-4 mb-4">
       <div class="col-12">
@@ -506,6 +548,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import AlertasRegulatoriosCard from '@/components/AlertasRegulatoriosCard.vue';
+
 
 const stats = ref({});
 const filters = ref({
@@ -1082,4 +1126,32 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.8rem;
 }
+/* Info Cards */
+.info-card {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s;
+  height: 100%;
+}
+
+.info-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-3px);
+}
+
+.info-card h6 {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.info-card p {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 </style>
