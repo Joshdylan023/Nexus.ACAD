@@ -26,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
             'instituicao' => \App\Models\Instituicao::class,
             'campus' => \App\Models\Campus::class,
             'setor' => \App\Models\Setor::class,
+            'user' => \App\Models\User::class,
         ]);
     }
+
+    
 }

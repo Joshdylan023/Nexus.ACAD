@@ -229,7 +229,7 @@ const setoresDisponiveis = computed(() => {
 
 const setorPaiOptions = computed(() => {
   const instituicaoSetoresFormatado = validSetoresVinculados.value
-    .filter(v => !isEditing.value || v.id !== editingId.value)
+    .filter(v => !isEditing.value || v.pivot.id !== editingId.value)
     .map(v => ({
       id: v.id,
       nome: `${v.setor.nome} (Instituição)`

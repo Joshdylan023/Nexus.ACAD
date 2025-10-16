@@ -19,31 +19,18 @@ trait HasIdentidadeVisual
      */
     public function getIdentidadeVisualAtiva()
     {
-        // 1. Tenta da própria entidade
         if ($this->identidadeVisual) {
             return $this->identidadeVisual;
         }
 
-        // 2. Se for Instituição, tenta da Mantenedora
-        if ($this instanceof \App\Models\Instituicao && $this->mantenedora) {
-            if ($this->mantenedora->identidadeVisual) {
-                return $this->mantenedora->identidadeVisual;
-            }
-            
-            // 3. Tenta do Grupo
-            if ($this->mantenedora->grupoEducacional?->identidadeVisual) {
-                return $this->mantenedora->grupoEducacional->identidadeVisual;
-            }
+        if ($this instanceof \App\Models\Instituicao && $this->mantenedora?->getIdentidadeVisualAtiva()) {
+            return $this->mantenedora->getIdentidadeVisualAtiva();
         }
 
-        // 4. Se for Mantenedora, tenta do Grupo
-        if ($this instanceof \App\Models\Mantenedora && $this->grupoEducacional) {
-            if ($this->grupoEducacional->identidadeVisual) {
-                return $this->grupoEducacional->identidadeVisual;
-            }
+        if ($this instanceof \App\Models\Mantenedora && $this->grupoEducacional?->identidadeVisual) {
+            return $this->grupoEducacional->identidadeVisual;
         }
 
-        // 5. Retorna identidade padrão do sistema
         return $this->getIdentidadePadrao();
     }
 
@@ -82,34 +69,20 @@ trait HasIdentidadeVisual
      */
     public function getOrigemIdentidadeVisual(): array
     {
-        if ($this->identidadeVisual) {
+        if ($this->hasIdentidadeVisualPropria()) {
             return [
                 'origem' => 'propria',
                 'entidade' => $this->getMorphClass(),
                 'nome' => $this->nome ?? $this->razao_social ?? 'Entidade',
             ];
         }
-
+ 
         if ($this instanceof \App\Models\Instituicao && $this->mantenedora) {
-            if ($this->mantenedora->identidadeVisual) {
-                return [
-                    'origem' => 'herdada',
-                    'entidade' => 'Mantenedora',
-                    'nome' => $this->mantenedora->razao_social,
-                ];
-            }
-            
-            if ($this->mantenedora->grupoEducacional?->identidadeVisual) {
-                return [
-                    'origem' => 'herdada',
-                    'entidade' => 'Grupo Educacional',
-                    'nome' => $this->mantenedora->grupoEducacional->nome,
-                ];
-            }
+            return $this->mantenedora->getOrigemIdentidadeVisual();
         }
 
         if ($this instanceof \App\Models\Mantenedora && $this->grupoEducacional) {
-            if ($this->grupoEducacional->identidadeVisual) {
+            if ($this->grupoEducacional->hasIdentidadeVisualPropria()) {
                 return [
                     'origem' => 'herdada',
                     'entidade' => 'Grupo Educacional',

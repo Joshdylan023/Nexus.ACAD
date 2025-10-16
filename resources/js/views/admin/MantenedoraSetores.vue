@@ -235,7 +235,7 @@ const setorPaiOptions = computed(() => {
   }));
 
   const mantenedoraSetores = setoresVinculados.value
-    .filter(s => !isEditing.value || s.pivot.id !== editingId.value)
+    .filter(setor => !isEditing.value || setor.pivot.id !== editingId.value)
     .map(s => ({
       id: s.pivot.id,
       nome: s.nome,

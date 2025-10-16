@@ -2,12 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
-
 trait Auditable
 {
-    use SoftDeletes;
-
     /**
      * Boot do Trait - registra eventos
      */
@@ -28,9 +24,9 @@ trait Auditable
             }
         });
 
-        // Ao DELETAR (soft delete) um registro
+        // Ao DELETAR (soft delete) um registro - SOMENTE se tiver SoftDeletes
         static::deleting(function ($model) {
-            if (auth()->check() && $model->isForceDeleting() === false) {
+            if (auth()->check() && method_exists($model, 'isForceDeleting') && $model->isForceDeleting() === false) {
                 $model->updated_by = auth()->id();
                 $model->save();
             }
@@ -54,18 +50,24 @@ trait Auditable
     }
 
     /**
-     * Scope para buscar apenas registros não deletados
+     * Scope para buscar apenas registros não deletados (se tiver SoftDeletes)
      */
     public function scopeActive($query)
     {
-        return $query->whereNull('deleted_at');
+        if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($this))) {
+            return $query->whereNull('deleted_at');
+        }
+        return $query;
     }
 
     /**
-     * Scope para buscar registros deletados
+     * Scope para buscar registros deletados (se tiver SoftDeletes)
      */
     public function scopeOnlyTrashed($query)
     {
-        return $query->whereNotNull('deleted_at');
+        if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($this))) {
+            return $query->whereNotNull('deleted_at');
+        }
+        return $query;
     }
 }

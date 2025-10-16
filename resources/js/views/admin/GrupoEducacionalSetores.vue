@@ -217,7 +217,7 @@ const setoresPaginados = computed(() => {
 });
 
 const setoresPaiDisponiveis = computed(() => {
-  return setoresVinculados.value.filter(s => !isEditing.value || s.pivot.id !== editingId.value);
+  return setoresVinculados.value.filter(setor => !isEditing.value || setor.pivot.id !== editingId.value);
 });
 
 watch(buscaRapida, () => {

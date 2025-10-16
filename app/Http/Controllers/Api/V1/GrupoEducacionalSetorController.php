@@ -19,36 +19,10 @@ class GrupoEducacionalSetorController extends Controller
             // Buscar diretamente os vínculos com eager loading
             $vinculos = SetorVinculo::where('vinculavel_type', 'grupo_educacional')
                 ->where('vinculavel_id', $grupoEducacional->id)
-                ->with(['setor', 'gestor:id,name'])
+                ->with(['setor', 'gestor.usuario'])
                 ->get();
 
-            // Formatar no estilo esperado pelo frontend
-            $setores = $vinculos->map(function ($vinculo) {
-                $setor = $vinculo->setor;
-                
-                if (!$setor) {
-                    return null;
-                }
-                
-                // Adicionar dados do pivot ao setor
-                $setor->pivot = (object)[
-                    'id' => $vinculo->id,
-                    'gestor_id' => $vinculo->gestor_id,
-                    'gestor' => $vinculo->gestor,
-                    'status' => $vinculo->status,
-                    'centro_custo_sap' => $vinculo->centro_custo_sap,
-                    'centro_resultado_sap' => $vinculo->centro_resultado_sap,
-                    'requer_portaria_nomeacao_gestor' => $vinculo->requer_portaria_nomeacao_gestor,
-                    'pai_id' => $vinculo->pai_id,
-                    'vinculavel_type' => $vinculo->vinculavel_type,
-                    'vinculavel_id' => $vinculo->vinculavel_id,
-                    'setor_id' => $vinculo->setor_id,
-                ];
-                
-                return $setor;
-            })->filter()->values();
-
-            return response()->json($setores);
+            return response()->json($vinculos);
             
         } catch (\Exception $e) {
             Log::error('Erro ao buscar setores do grupo educacional: ' . $e->getMessage());

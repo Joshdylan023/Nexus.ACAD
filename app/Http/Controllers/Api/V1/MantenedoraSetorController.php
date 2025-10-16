@@ -12,20 +12,8 @@ class MantenedoraSetorController extends Controller
 {
     public function index(Mantenedora $mantenedora): JsonResponse
     {
-        $vinculos = $mantenedora->vinculosDeSetor()->with(['setor', 'gestor'])->get();
-
-        $setores = $vinculos->map(function ($vinculo) {
-            $setor = $vinculo->setor;
-            if ($setor) {
-                $pivotData = $vinculo->toArray();
-                unset($pivotData['setor']);
-                $pivotData['gestor'] = $vinculo->gestor;
-                $setor->pivot = $pivotData;
-            }
-            return $setor;
-        })->filter();
-
-        return response()->json($setores);
+        $vinculos = $mantenedora->vinculosDeSetor()->with(['setor', 'gestor', 'pai'])->get();
+        return response()->json($vinculos);
     }
 
     public function store(Request $request, Mantenedora $mantenedora): JsonResponse

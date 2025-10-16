@@ -96,40 +96,20 @@
                   <i class="bi bi-person-check me-2"></i>
                   Colaboradores Autorizados (Acesso Especial)
                 </label>
-                <select 
-                  class="form-select" 
-                  v-model="form.restricted_access" 
-                  multiple 
-                  size="5"
-                >
-                  <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.display_info }}
-                  </option>
-                </select>
+                <v-select
+                  multiple
+                  v-model="form.restricted_access"
+                  :options="users"
+                  :reduce="user => user.id"
+                  label="display_info"
+                  placeholder="Busque por nome ou matrícula"
+                />
                 <small class="form-text text-muted d-block mt-2">
-                  Mantenha pressionado Ctrl (ou Cmd) para selecionar múltiplos usuários. 
                   Estes usuários terão acesso ao sistema mesmo durante o evento.
                 </small>
               </div>
 
-              <!-- Exibir usuários selecionados -->
-              <div v-if="form.restricted_access && form.restricted_access.length > 0" class="mt-3">
-                <strong class="d-block mb-2">Usuários Selecionados:</strong>
-                <div class="selected-users">
-                  <span 
-                    v-for="userId in form.restricted_access" 
-                    :key="userId" 
-                    class="badge bg-primary me-2 mb-2"
-                  >
-                    {{ getUserName(userId) }}
-                    <i 
-                      class="bi bi-x-circle ms-1" 
-                      style="cursor: pointer;"
-                      @click="removeUser(userId)"
-                    ></i>
-                  </span>
-                </div>
-              </div>
+              <!-- O v-select já exibe os usuários selecionados -->
             </div>
           </div>
 
@@ -240,6 +220,8 @@ import { Modal } from 'bootstrap';
 import PageHeader from '@/components/PageHeader.vue';
 import TableSkeleton from '@/components/TableSkeleton.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import vSelect from 'vue-select';
+import 'vue-select/dist/vue-select.css';
 
 const loading = ref(true);
 const showForm = ref(false);
@@ -329,18 +311,11 @@ const formatDateTime = (dateString) => {
   });
 };
 
-const getUserName = (userId) => {
-  const user = users.value.find(u => u.id === userId);
-  return user ? user.display_info : 'Usuário não encontrado';
-};
 
-const removeUser = (userId) => {
-  form.value.restricted_access = form.value.restricted_access.filter(id => id !== userId);
-};
 
 const fetchUsers = async () => {
   try {
-    const response = await axios.get('/api/v1/users');
+    const response = await axios.get('/api/v1/users/colaboradores');
     users.value = response.data;
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
@@ -355,12 +330,23 @@ const fetchEvents = async () => {
       axios.get('/api/v1/system-events/current')
     ]);
     
-    events.value = eventsRes.data;
-    
-    // Só atribui se o evento atual tiver dados válidos
     activeEvent.value = currentRes.data && currentRes.data.id ? currentRes.data : null;
+    
+    // A API pode retornar dados paginados, então acessamos `data.data`
+    let allEvents = (eventsRes.data && eventsRes.data.data) ? eventsRes.data.data : (Array.isArray(eventsRes.data) ? eventsRes.data : []);
+    
+    // Filtra eventos sem título
+    allEvents = allEvents.filter(e => e.title);
+
+    if (activeEvent.value) {
+      // Filtra o evento ativo da lista principal para evitar duplicação
+      events.value = allEvents.filter(event => event.id !== activeEvent.value.id);
+    } else {
+      events.value = allEvents;
+    }
   } catch (error) {
     console.error('Erro ao buscar eventos:', error);
+    events.value = []; // Garante que events seja sempre um array em caso de erro
   } finally {
     loading.value = false;
   }
@@ -519,5 +505,58 @@ onMounted(() => {
 
 .table-hover tbody tr:hover {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Estilização do v-select para o tema escuro */
+:deep(.vs__dropdown-toggle) {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+}
+
+:deep(.vs__search::placeholder),
+:deep(.vs__search),
+:deep(.vs__selected-options),
+:deep(.vs__selected) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+:deep(.vs__selected) {
+  background-color: rgba(0, 123, 255, 0.5); /* Azul primário com transparência */
+  border: none;
+  padding: 0.25em 0.6em;
+}
+
+:deep(.vs__deselect) {
+  fill: rgba(255, 255, 255, 0.9);
+  margin-left: 6px;
+}
+
+:deep(.vs__deselect:hover) {
+  fill: white;
+}
+
+:deep(.vs__clear),
+:deep(.vs__open-indicator) {
+  fill: rgba(255, 255, 255, 0.5);
+}
+
+:deep(.vs__dropdown-menu) {
+  background: #1a202c; /* Um fundo escuro sólido */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+:deep(.vs__dropdown-option) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+:deep(.vs__dropdown-option--highlight) {
+  background: #007bff;
+  color: white;
+}
+
+:deep(.vs__no-options) {
+  color: rgba(255, 255, 255, 0.5);
 }
 </style>
