@@ -22,3 +22,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/{any}', function () {
     return view('app');
 })->where('any', '.*');
+
+Route::get('/relatorios', function () {
+    return inertia('Relatorios/Relatorios');
+})->name('relatorios.index');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'show'])->name('password.change');
+    Route::post('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'update'])->name('password.update');
+});

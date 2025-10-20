@@ -53,6 +53,14 @@ class PermissaoSeeder extends Seeder
             'gerenciar-documentacao-colaborador' => 'Gerenciar documentação de colaboradores',
 
             // ============================================
+            // 🔗 MÓDULO: INTEGRAÇÕES
+            // ============================================
+            'gerenciar-integracoes' => 'Gerenciar integrações com sistemas externos',
+            'visualizar-integracoes' => 'Visualizar integrações configuradas',
+            'executar-sincronizacoes' => 'Executar sincronizações manuais',
+            'visualizar-logs-sincronizacao' => 'Visualizar logs de sincronização',
+
+            // ============================================
             // 👨‍🏫 MÓDULO: PROFESSORES
             // ============================================
             'visualizar-professores' => 'Visualizar professores',
@@ -96,6 +104,7 @@ class PermissaoSeeder extends Seeder
             // ============================================
             'visualizar-configuracoes' => 'Visualizar configurações',
             'gerenciar-configuracoes' => 'Gerenciar configurações do sistema',
+            'gerenciar-sistema' => 'Gerenciar sistema (super admin)',
         ];
 
         foreach ($permissoes as $nome => $descricao) {
@@ -137,8 +146,46 @@ class PermissaoSeeder extends Seeder
             'exportar-relatorios',
             'visualizar-importacoes',
             'realizar-importacoes',
+            'visualizar-integracoes',
+            'gerenciar-integracoes',
+            'executar-sincronizacoes',
         ]);
         $this->command->info('✅ Perfil "Administrador" criado!');
+
+        // Gestor de RH
+        $gestorRH = Role::firstOrCreate(
+            ['name' => 'Gestor de RH'],
+            ['guard_name' => 'web']
+        );
+        $gestorRH->syncPermissions([
+            'visualizar-colaboradores',
+            'gerenciar-colaboradores',
+            'visualizar-professores',
+            'gerenciar-professores',
+            'visualizar-relatorios',
+            'exportar-relatorios',
+            'visualizar-integracoes',
+            'visualizar-logs-sincronizacao',
+        ]);
+        $this->command->info('✅ Perfil "Gestor de RH" criado!');
+
+        // Gestor Acadêmico
+        $gestorAcademico = Role::firstOrCreate(
+            ['name' => 'Gestor Acadêmico'],
+            ['guard_name' => 'web']
+        );
+        $gestorAcademico->syncPermissions([
+            'visualizar-institucional',
+            'visualizar-academico',
+            'gerenciar-academico',
+            'gerenciar-cursos',
+            'gerenciar-disciplinas',
+            'gerenciar-curriculos',
+            'visualizar-professores',
+            'visualizar-relatorios',
+            'exportar-relatorios',
+        ]);
+        $this->command->info('✅ Perfil "Gestor Acadêmico" criado!');
 
         // Gestor
         $gestor = Role::firstOrCreate(
@@ -166,5 +213,15 @@ class PermissaoSeeder extends Seeder
             'visualizar-relatorios',
         ]);
         $this->command->info('✅ Perfil "Consultor" criado!');
+
+        // Colaborador Padrão
+        $colaborador = Role::firstOrCreate(
+            ['name' => 'Colaborador'],
+            ['guard_name' => 'web']
+        );
+        $colaborador->syncPermissions([
+            'visualizar-institucional',
+        ]);
+        $this->command->info('✅ Perfil "Colaborador" criado!');
     }
 }

@@ -11,19 +11,21 @@ use Illuminate\Validation\Rule;
 class SetorController extends Controller
 {
     /**
-     * Exibe uma lista de todos os Setores.
+     * Listar todos os setores
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $query = Setor::orderBy('nome');
-
-        // Se a requisição pedir tipos específicos, filtra por eles
-        if ($request->has('tipos')) {
-            $tipos = explode(',', $request->tipos);
-            $query->whereIn('tipo', $tipos);
+        try {
+            // ✅ APENAS COLUNAS QUE EXISTEM NA TABELA
+            $setores = Setor::select('id', 'nome', 'sigla', 'tipo')
+                ->orderBy('nome')
+                ->get();
+            
+            return response()->json($setores);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao listar setores: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        return response()->json($query->get());
     }
 
     /**

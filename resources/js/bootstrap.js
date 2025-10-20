@@ -5,9 +5,9 @@ window.axios = axios;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.axios.defaults.withCredentials = true;
 
-// Adiciona o token de autenticação em todas as requisições se ele existir
+// ✅ CORRIGIDO: Buscar 'token' ao invés de 'authToken'
 axios.interceptors.request.use(config => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token'); // ⭐ MUDOU AQUI
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -16,8 +16,22 @@ axios.interceptors.request.use(config => {
     return Promise.reject(error);
 });
 
+// ✅ ADICIONAR: Interceptor para erros 401
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 // Define a URL base para todas as nossas requisições de API
 window.axios.defaults.baseURL = 'http://127.0.0.1:8000';
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting
@@ -37,7 +51,7 @@ window.Echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
-    authEndpoint: '/api/broadcasting/auth', // MUDOU AQUI: adicionou /api/
+    authEndpoint: '/api/broadcasting/auth',
     authorizer: (channel, options) => {
         return {
             authorize: (socketId, callback) => {

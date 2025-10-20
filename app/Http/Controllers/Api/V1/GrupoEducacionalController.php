@@ -4,31 +4,34 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\GrupoEducacional;
+use App\Models\Mantenedora;
 use App\Http\Requests\StoreGrupoEducacionalRequest;
 use App\Http\Requests\UpdateGrupoEducacionalRequest;
+use Illuminate\Http\JsonResponse;
 
 class GrupoEducacionalController extends Controller
 {
-    public function index()
+    /**
+     * Listar todos os grupos educacionais
+     */
+    public function index(): JsonResponse
     {
-        return GrupoEducacional::with(['mantenedoras', 'creator', 'updater'])->get();
+        try {
+            $grupos = GrupoEducacional::select('id', 'nome')
+                ->orderBy('nome')
+                ->get();
+            
+            return response()->json($grupos);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao listar grupos educacionais: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(StoreGrupoEducacionalRequest $request)
     {
         $grupo = GrupoEducacional::create($request->validated());
-        
-        // NOTIFICAÇÃO AUTOMÁTICA
-        \App\Helpers\NotificationHelper::notifyByRole(
-            'admin',
-            'success',
-            '✅ Novo Grupo Educacional Criado',
-            "O grupo '{$grupo->nome}' foi cadastrado por " . auth()->user()->name,
-            'new_grupo',
-            "/admin/institucional/grupos-educacionais"
-        );
-
-        return response()->json($grupo->load(['creator', 'updater']), 201);
+        return response()->json($grupo->load('creator', 'updater'), 201);
     }
 
     public function show(GrupoEducacional $grupo)
@@ -39,34 +42,32 @@ class GrupoEducacionalController extends Controller
     public function update(UpdateGrupoEducacionalRequest $request, GrupoEducacional $grupo)
     {
         $grupo->update($request->validated());
-        
-        // NOTIFICAÇÃO AUTOMÁTICA
-        \App\Helpers\NotificationHelper::notifyByRole(
-            'admin',
-            'info',
-            '📝 Grupo Educacional Atualizado',
-            "O grupo '{$grupo->nome}' foi atualizado por " . auth()->user()->name,
-            'update_grupo',
-            "/admin/institucional/grupos-educacionais"
-        );
-
-        return response()->json($grupo->load(['creator', 'updater']));
+        return response()->json($grupo->load('creator', 'updater'));
     }
 
     public function destroy(GrupoEducacional $grupo)
     {
-        $nomeGrupo = $grupo->nome;
         $grupo->delete();
-        
-        // NOTIFICAÇÃO AUTOMÁTICA
-        \App\Helpers\NotificationHelper::notifyByRole(
-            'admin',
-            'warning',
-            '🗑️ Grupo Educacional Excluído',
-            "O grupo '{$nomeGrupo}' foi excluído por " . auth()->user()->name,
-            'delete_grupo'
-        );
+        return response()->json(['message' => 'Grupo educacional excluído com sucesso']);
+    }
 
-        return response()->json(['message' => 'Grupo excluído com sucesso']);
+    /**
+     * ✅ LISTAR MANTENEDORAS DE UM GRUPO EDUCACIONAL
+     */
+    public function mantenedoras($id): JsonResponse
+    {
+        try {
+            $mantenedoras = Mantenedora::where('grupo_educacional_id', $id)
+                ->select('id', 'razao_social', 'nome_fantasia', 'cnpj')
+                ->orderBy('razao_social')
+                ->get();
+            
+            \Log::info("Grupo {$id} - Total de mantenedoras encontradas: " . $mantenedoras->count());
+            
+            return response()->json($mantenedoras);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao listar mantenedoras do grupo ' . $id . ': ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

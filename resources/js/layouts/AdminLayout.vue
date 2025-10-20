@@ -238,19 +238,312 @@ const menuStructure = ref({
       { label: 'NexusVision', path: '/admin/institucional/nexusvision', icon: 'bi bi-speedometer2' },
     ],
   },
-
+  // ✅ MÓDULO ACADÊMICO COMPLETO - 95 FUNCIONALIDADES
   academico: {
     name: 'Gestão Acadêmica',
     icon: 'bi bi-mortarboard-fill',
     basePath: '/admin/academico',
-    menus: []
-  },
+    menus: [
+      // ========================================
+      // 1. ADMINISTRA CURSOS
+      // ========================================
+      {
+        label: 'Administra Cursos',
+        path: '#',
+        icon: 'bi bi-book',
+        submenus: [
+          { label: 'Grandes Áreas', path: '/admin/academico/grande-areas' },
+          { label: 'Áreas de Conhecimento', path: '/admin/academico/areas-conhecimento' },
+          { 
+            label: 'Curso',
+            path: '#',
+            submenus: [
+              { label: 'Catálogo de Cursos', path: '/admin/academico/catalogo-cursos' },
+              { label: 'Cursos', path: '/admin/academico/cursos' },
+            ]
+          },
+          { label: 'Coordenador(es) de Curso', path: '/admin/academico/coordenadores-curso' },
+          { label: 'Turmas', path: '/admin/academico/turmas' },
+          {
+            label: 'Matrizes',
+            path: '#',
+            submenus: [
+              { label: 'Disciplinas', path: '/admin/academico/disciplinas' },
+              { label: 'Matriz Curricular', path: '/admin/academico/curriculos' },
+              { label: 'Currículo', path: '/admin/academico/curriculos' },
+              { label: 'Equivalência entre Currículos', path: '/admin/academico/equivalencia-curriculos' },
+              { label: 'Ementas', path: '/admin/academico/ementas' },
+            ]
+          },
+        ]
+      },
 
+      // ========================================
+      // 2. PLANEJAMENTO ACADÊMICO
+      // ========================================
+      {
+        label: 'Planejamento Acadêmico',
+        path: '#',
+        icon: 'bi bi-calendar3',
+        submenus: [
+          { label: 'Dashboard', path: '/admin/academico/planejamento/dashboard' },
+          { label: 'Oferta de Cursos', path: '/admin/academico/planejamento/oferta-cursos' },
+          { label: 'Oferta de Disciplinas/Turmas', path: '/admin/academico/planejamento/oferta-disciplinas' },
+          { label: 'Disponibilidade Docente', path: '/admin/academico/planejamento/disponibilidade-docente' },
+          { label: 'Alocação de Espaço Físico', path: '/admin/academico/planejamento/alocacao-espaco' },
+        ]
+      },
+
+      // ========================================
+      // 3. MATRÍCULA
+      // ========================================
+      {
+        label: 'Matrícula',
+        path: '#',
+        icon: 'bi bi-clipboard-check',
+        submenus: [
+          { label: 'Enturmação', path: '/admin/academico/matricula/enturmacao' },
+          { label: 'Equivalência de Disciplinas', path: '/admin/academico/matricula/equivalencia' },
+        ]
+      },
+
+      // ========================================
+      // 4. ALUNOS (SEÇÃO MAIS COMPLETA)
+      // ========================================
+      {
+        label: 'Alunos',
+        path: '#',
+        icon: 'bi bi-people',
+        submenus: [
+          { label: 'Cadastro de Alunos', path: '/admin/academico/alunos' },
+          { label: 'Consulta Contratos Educacionais Aluno', path: '/admin/academico/alunos/contratos' },
+          { label: 'Consulta Notas (e Frequência) por Aluno', path: '/admin/academico/alunos/notas-aluno' },
+          { label: 'Consulta Notas (e Frequência) por Turma', path: '/admin/academico/alunos/notas-turma' },
+          { label: 'Isenção/Aproveitamento de Disciplinas', path: '/admin/academico/alunos/aproveitamento' },
+          { label: 'Lançamento Situação ENADE', path: '/admin/academico/alunos/lancamento-enade' },
+          { label: 'Gera/Remove Impedimento Renovação', path: '/admin/academico/alunos/impedimento-renovacao' },
+          { label: 'Ajuste de Histórico', path: '/admin/academico/alunos/ajuste-historico' },
+          { label: 'Carteirinha de Estudante', path: '/admin/academico/alunos/carteirinha' },
+          { label: 'Log', path: '/admin/academico/alunos/log' },
+          {
+            label: 'Movimentações',
+            path: '#',
+            submenus: [
+              { label: 'Transferência de Turno', path: '/admin/academico/alunos/movimentacoes/transferencia-turno' },
+              { label: 'Transferência de Campus', path: '/admin/academico/alunos/movimentacoes/transferencia-campus' },
+              { label: 'Transferência de Curso', path: '/admin/academico/alunos/movimentacoes/transferencia-curso' },
+              { label: 'Transferência Externa (Saída)', path: '/admin/academico/alunos/movimentacoes/transferencia-externa' },
+              { label: 'Trancamento', path: '/admin/academico/alunos/movimentacoes/trancamento' },
+              { label: 'Cancelamento', path: '/admin/academico/alunos/movimentacoes/cancelamento' },
+              { label: 'Desfaz Abandono', path: '/admin/academico/alunos/movimentacoes/desfaz-abandono' },
+            ]
+          },
+          {
+            label: 'Declarações',
+            path: '#',
+            submenus: [
+              { label: 'Declarações Cadastradas', path: '/admin/academico/alunos/declaracoes' },
+            ]
+          },
+          {
+            label: 'Relatórios',
+            path: '#',
+            submenus: [
+              { label: 'Plano de Ensino', path: '/admin/academico/alunos/relatorios/plano-ensino' },
+              { label: 'Histórico Escolar Graduação - Simples Conferência', path: '/admin/academico/alunos/relatorios/historico-graduacao' },
+              { label: 'Histórico Escolar Mestrado', path: '/admin/academico/alunos/relatorios/historico-mestrado' },
+              { label: 'Histórico Escolar - Pós-Graduação', path: '/admin/academico/alunos/relatorios/historico-pos' },
+              { label: 'Histórico Horas AAC', path: '/admin/academico/alunos/relatorios/historico-aac' },
+              { label: 'Relação de Alunos Simples', path: '/admin/academico/alunos/relatorios/relacao-alunos' },
+              { label: 'Situação do Aluno no Curso', path: '/admin/academico/alunos/relatorios/situacao-aluno' },
+              { label: 'Prováveis Formandos', path: '/admin/academico/alunos/relatorios/provaveis-formandos' },
+              { label: 'Relação de Alunos por Situação', path: '/admin/academico/alunos/relatorios/alunos-situacao' },
+              { label: 'Lista de Alunos para ENADE', path: '/admin/academico/alunos/relatorios/alunos-enade' },
+              { label: 'Lista de Alunos para Secretaria de Transportes', path: '/admin/academico/alunos/relatorios/alunos-transporte' },
+              { label: 'Alunos Aptos a Renovar', path: '/admin/academico/alunos/relatorios/aptos-renovar' },
+              { label: 'Relação de Estágios', path: '/admin/academico/alunos/relatorios/estagios' },
+            ]
+          },
+        ]
+      },
+
+      // ========================================
+      // 5. CONTRATO EDUCACIONAL
+      // ========================================
+      {
+        label: 'Contrato Educacional',
+        path: '#',
+        icon: 'bi bi-file-text',
+        submenus: [
+          { label: 'Editar Contrato Aluno', path: '/admin/academico/contrato/editar' },
+        ]
+      },
+
+      // ========================================
+      // 6. DOCUMENTOS DIGITAIS
+      // ========================================
+      {
+        label: 'Documentos Digitais',
+        path: '#',
+        icon: 'bi bi-file-earmark-medical',
+        submenus: [
+          { label: 'Diploma Digital', path: '/admin/academico/documentos/diploma' },
+          { label: 'Histórico Escolar Digital - Final', path: '/admin/academico/documentos/historico-final' },
+          { label: 'Histórico Escolar Digital - Parcial', path: '/admin/academico/documentos/historico-parcial' },
+        ]
+      },
+
+      // ========================================
+      // 7. COLAÇÃO DE GRAU
+      // ========================================
+      {
+        label: 'Colação de Grau',
+        path: '#',
+        icon: 'bi bi-award',
+        submenus: [
+          { label: 'Solenidades', path: '/admin/academico/colacao/solenidades' },
+          { label: 'Livro de Colação', path: '/admin/academico/colacao/livro' },
+          { label: 'Lista de Formandos', path: '/admin/academico/colacao/formandos' },
+          { label: 'Gera/Remove Impedimento Colação', path: '/admin/academico/colacao/impedimento' },
+        ]
+      },
+
+      // ========================================
+      // 8. EXPEDIÇÃO E REGISTRO DE DIPLOMAS
+      // ========================================
+      {
+        label: 'Expedição e Registro de Diplomas',
+        path: '#',
+        icon: 'bi bi-patch-check',
+        submenus: [
+          { label: 'Preparação para Expedição', path: '/admin/academico/diplomas/preparacao' },
+          { label: 'Registro de Diplomas', path: '/admin/academico/diplomas/registro' },
+          { label: 'Consulta Diplomas Registrados', path: '/admin/academico/diplomas/consulta' },
+        ]
+      },
+
+      // ========================================
+      // 9. REQUERIMENTOS
+      // ========================================
+      {
+        label: 'Requerimentos',
+        path: '#',
+        icon: 'bi bi-inbox',
+        submenus: [
+          { label: 'Novo Requerimento', path: '/admin/academico/requerimentos/novo' },
+          { label: 'Consulta Requerimento', path: '/admin/academico/requerimentos/consulta' },
+          { label: 'Fila de Requerimentos (Tramitador)', path: '/admin/academico/requerimentos/fila' },
+          { label: 'Relatório de Requerimentos', path: '/admin/academico/requerimentos/relatorio' },
+        ]
+      },
+
+      // ========================================
+      // 10. CONTROLE ACADÊMICO
+      // ========================================
+      {
+        label: 'Controle Acadêmico',
+        path: '#',
+        icon: 'bi bi-journal-check',
+        submenus: [
+          { label: 'Pauta', path: '/admin/academico/controle/pauta' },
+          { label: 'Lançamento de Frequência Turma', path: '/admin/academico/controle/frequencia' },
+          { label: 'Lançamento de Nota Turma', path: '/admin/academico/controle/notas' },
+          { label: 'Relatórios', path: '/admin/academico/controle/relatorios' },
+        ]
+      },
+
+      // ========================================
+      // 11. ATIVIDADE ACADÊMICA COMPLEMENTAR (AAC)
+      // ========================================
+      {
+        label: 'Atividade Acadêmica Complementar (AAC)',
+        path: '#',
+        icon: 'bi bi-trophy',
+        submenus: [
+          { label: 'Eixo Temático', path: '/admin/academico/aac/eixos' },
+          { label: 'Criar Atividade', path: '/admin/academico/aac/criar' },
+          { label: 'Inscrição', path: '/admin/academico/aac/inscricao' },
+          { label: 'Lançamento de Frequência a Lote', path: '/admin/academico/aac/frequencia-lote' },
+          { label: 'Consulta AAC Aluno', path: '/admin/academico/aac/consulta-aluno' },
+          { label: 'Consulta Atividades Cadastradas', path: '/admin/academico/aac/consulta-atividades' },
+          { label: 'Relatórios AAC', path: '/admin/academico/aac/relatorios' },
+        ]
+      },
+
+      // ========================================
+      // 12. ATENDIMENTO
+      // ========================================
+      {
+        label: 'Atendimento',
+        path: '#',
+        icon: 'bi bi-headset',
+        submenus: [
+          { label: 'Registrar Atendimento (Avulso e Agendado)', path: '/admin/academico/atendimento/registrar' },
+          { label: 'Agendar Atendimento', path: '/admin/academico/atendimento/agendar' },
+          { label: 'Consulta Atendimento', path: '/admin/academico/atendimento/consulta' },
+          { label: 'Setores de Atendimento', path: '/admin/academico/atendimento/setores' },
+          { label: 'Disponibiliza Agenda de Atendimento', path: '/admin/academico/atendimento/agenda' },
+          { label: 'Relatórios', path: '/admin/academico/atendimento/relatorios' },
+        ]
+      },
+
+      // ========================================
+      // 13. INFORMAÇÕES REFERENCIAIS
+      // ========================================
+      {
+        label: 'Informações Referenciais',
+        path: '#',
+        icon: 'bi bi-gear-fill',
+        submenus: [
+          { 
+            label: 'Catálogo de Documentos, Relatórios e Históricos', 
+            path: '/admin/academico/informacoes-referenciais/catalogo-documentos' 
+          },
+          { 
+            label: 'Catálogo de Requerimentos', 
+            path: '/admin/academico/informacoes-referenciais/catalogo-requerimentos' 
+          },
+        ]
+      },
+
+      // ========================================
+      // 14. MENSAGEM PORTAL/APP ALUNO
+      // ========================================
+      {
+        label: 'Mensagem Portal/App Aluno',
+        path: '/admin/academico/mensagem-portal-aluno',
+        icon: 'bi bi-chat-dots',
+      },
+
+      // ========================================
+      // 15. PESQUISA INSTITUCIONAL
+      // ========================================
+      {
+        label: 'Pesquisa Institucional',
+        path: '#',
+        icon: 'bi bi-clipboard-data',
+        submenus: [
+          { label: 'Cria Pesquisa', path: '/admin/academico/pesquisa/criar' },
+          { label: 'Libera Pesquisa', path: '/admin/academico/pesquisa/liberar' },
+          { label: 'Consulta Pesquisa', path: '/admin/academico/pesquisa/consulta' },
+          { label: 'Resultado Pesquisa', path: '/admin/academico/pesquisa/resultado' },
+        ]
+      },
+    ]
+  },
+  // ⭐ MÓDULO DE ESPAÇO FÍSICO
   espacoFisico: {
-    name: 'Gestão Espaço Físico',
-    icon: 'bi bi-compass',
-    basePath: '/admin/espaco-fisico',
-    menus: []
+    name: 'Gestão de Espaço Físico',
+    icon: 'bi bi-building',
+    basePath: '/admin/espaco-fisico/dashboard',
+    menus: [
+      { label: 'Dashboard 360°', path: '/admin/espaco-fisico/dashboard', icon: 'bi bi-pie-chart' },
+      { label: 'Prédios', path: '/admin/espaco-fisico/predios', icon: 'bi bi-building' },
+      { label: 'Blocos', path: '/admin/espaco-fisico/blocos', icon: 'bi bi-layers' },
+      { label: 'Andares', path: '/admin/espaco-fisico/andares', icon: 'bi bi-stack' },
+      { label: 'Espaços Físicos', path: '/admin/espaco-fisico/espacos', icon: 'bi bi-door-open' },
+      { label: 'Reservas', path: '/admin/espaco-fisico/reservas', icon: 'bi bi-calendar-check' },
+    ]
   },
 
   professores: {
@@ -295,11 +588,23 @@ const menuStructure = ref({
     menus: []
   },
 
-  reports: {
+  // ⭐ MÓDULO DE RELATÓRIOS
+  relatorios: {
     name: 'Relatórios',
-    icon: 'bi bi-file-earmark-bar-graph',
-    basePath: '/admin/reports',
-    menus: []
+    icon: 'bi bi-graph-up',
+    basePath: '/admin/relatorios',
+    menus: [
+      { 
+        label: 'Dashboard de RH', 
+        path: '/admin/relatorios/dashboard-rh', 
+        icon: 'bi bi-graph-up-arrow' 
+      },
+      { 
+        label: 'Relatórios Personalizados', 
+        path: '/admin/relatorios/personalizados',
+        icon: 'bi bi-file-earmark-bar-graph' 
+      },
+    ]
   },
 
   'pessoas-acessos': {
@@ -307,40 +612,59 @@ const menuStructure = ref({
     icon: 'bi bi-person-lock',
     basePath: '/admin/pessoas-acessos',
     menus: [
-    { 
-      label: 'Minha Área', 
-      path: '/admin/minha-area', 
-      icon: 'bi bi-person-circle' 
-    },
-    { 
-      label: 'Minha Equipe', 
-      path: '/admin/pessoas-acessos/minha-equipe', 
-      icon: 'bi bi-people-fill' 
-    },
-    { 
-      label: 'Organograma', 
-      path: '/admin/pessoas-acessos/organograma', 
-      icon: 'bi bi-diagram-3' 
-    },
-
-    { 
-      label: 'Aniversariantes', 
-      path: '/admin/rh/aniversariantes', 
-      icon: 'bi bi-cake2' 
-    },
-    { 
-      label: 'Colaboradores', 
-      path: '/admin/pessoas-acessos/colaboradores', 
-      icon: 'bi bi-people' 
-    },
-    { 
-      label: 'Perfis de Acesso', 
-      path: '/admin/pessoas-acessos/perfis',
-      icon: 'bi bi-shield-lock' 
-    },
+      { 
+        label: 'Minha Área', 
+        path: '/admin/minha-area', 
+        icon: 'bi bi-person-circle' 
+      },
+      { 
+        label: 'Minha Equipe', 
+        path: '/admin/pessoas-acessos/minha-equipe', 
+        icon: 'bi bi-people-fill' 
+      },
+      { 
+        label: 'Organograma', 
+        path: '/admin/pessoas-acessos/organograma', 
+        icon: 'bi bi-diagram-3' 
+      },
+      { 
+        label: 'Aniversariantes', 
+        path: '/admin/rh/aniversariantes', 
+        icon: 'bi bi-cake2' 
+      },
+      { 
+        label: 'Colaboradores', 
+        path: '/admin/pessoas-acessos/colaboradores', 
+        icon: 'bi bi-people' 
+      },
+      { 
+        label: 'Perfis de Acesso', 
+        path: '/admin/pessoas-acessos/perfis',
+        icon: 'bi bi-shield-lock' 
+      },
+      { 
+        label: 'Dashboard de RH', 
+        path: '/admin/relatorios/dashboard-rh', 
+        icon: 'bi bi-graph-up-arrow' 
+      },
     ]
   },
 
+  // ⭐ MÓDULO DE INTEGRAÇÕES
+  integracoes: {
+    name: 'Integrações com Sistemas de RH',
+    icon: 'bi bi-link-45deg',
+    basePath: '/admin/integracoes',
+    menus: [
+      { 
+        label: 'Integrações', 
+        path: '/admin/integracoes', 
+        icon: 'bi bi-diagram-3' 
+      },
+    ]
+  },
+
+  // ⭐ MÓDULO DE LOGS
   logs: {
     name: 'Logs de Auditoria',
     icon: 'bi bi-clock-history',

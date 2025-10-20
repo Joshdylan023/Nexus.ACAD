@@ -487,7 +487,8 @@ const fetchGestores = (search, loading) => {
       params: { search: search }
     })
       .then(response => {
-        gestorOptions.value = response.data.map(colaborador => ({
+        const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        gestorOptions.value = data.map(colaborador => ({
             id: colaborador.id,
             name: `${colaborador.usuario.name} (${colaborador.matricula_funcional})`
         }));

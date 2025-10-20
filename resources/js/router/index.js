@@ -18,10 +18,10 @@ import CampusSetores from '../views/admin/CampusSetores.vue';
 import Setores from '../views/admin/Setores.vue';
 
 // Gestão Acadêmica
-import GrandeAreas from '../views/admin/GrandeAreas.vue';
-import AreasConhecimento from '../views/admin/AreasConhecimento.vue';
-import Cursos from '../views/admin/Cursos.vue';
-import CursosAtosRegulatorios from '../views/admin/CursosAtosRegulatorios.vue';
+import GrandeAreas from '../views/admin/academico/GrandeAreas.vue';
+import AreasConhecimento from '../views/admin/academico/AreasConhecimento.vue';
+import CatalogoCursos from '../views/admin/academico/CatalogoCursos.vue';
+import Cursos from '../views/admin/academico/Cursos.vue';
 import Disciplinas from '../views/admin/Disciplinas.vue';
 import CurriculoMatriz from '../views/admin/CurriculoMatriz.vue';
 import Curriculos from '../views/admin/Curriculos.vue';
@@ -43,6 +43,7 @@ import MinhaArea from '../components/Profile/MinhaArea.vue';
 import MinhaEquipe from '../components/Profile/MinhaEquipe.vue';
 import Organograma from '../components/Equipe/Organograma.vue';
 import Aniversariantes from '../components/RH/Aniversariantes.vue';
+import DashboardRH from '../components/RH/DashboardRH.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -69,7 +70,6 @@ const routes = [
         meta: { requiresAuth: true, title: 'Aniversariantes', module: 'pessoas-acessos' }
       },
 
-      
       // Módulo: Gestão Institucional
       {
         path: 'institucional',
@@ -96,20 +96,180 @@ const routes = [
       },
 
       // Módulo: Relatórios e Análises
-      { path: 'reports', name: 'Reports', component: () => import('@/pages/Reports/Reports.vue'), meta: { requiresAuth: true } },
+      {
+        path: 'relatorios',
+        meta: { module: 'relatorios' },
+        children: [
+          { path: '', redirect: { name: 'DashboardRH' } },
+          {
+            path: 'dashboard-rh',
+            name: 'DashboardRH',
+            component: DashboardRH,
+            meta: { requiresAuth: true, title: 'Dashboard de RH', module: 'relatorios' }
+          },
+          // ⭐ RELATÓRIOS PERSONALIZADOS
+          {
+            path: 'personalizados',
+            name: 'RelatoriosPersonalizados',
+            component: () => import('@/pages/Relatorios/Relatorios.vue'),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Relatórios Personalizados', 
+              module: 'relatorios',
+              permissionAny: ['criar-relatorios', 'visualizar-relatorios', 'gerenciar-relatorios']
+            }
+          },
+        ]
+      },
 
       // ⭐ MÓDULO: NOTIFICAÇÕES
-      { path: 'notificacoes', name: 'Notificacoes', component: () => import('@/pages/Notificacoes/NotificationDashboard.vue'), meta: { requiresAuth: true, title: 'Central de Notificações' } },
+      { 
+        path: 'notificacoes', 
+        name: 'Notificacoes', 
+        component: () => import('@/pages/Notificacoes/NotificationDashboard.vue'), 
+        meta: { requiresAuth: true, title: 'Central de Notificações' } 
+      },
+
+      // ⭐ MÓDULO: INTEGRAÇÕES COM SISTEMAS DE RH
+      {
+        path: 'integracoes',
+        meta: { module: 'integracoes' },
+        children: [
+          // Listagem de Integrações
+          { 
+            path: '', 
+            name: 'Integracoes', 
+            component: () => import('@/pages/Integration/IntegrationList.vue'),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Integrações com Sistemas de RH',
+              permissionAny: ['gerenciar-integracoes', 'visualizar-integracoes']
+            }
+          },
+          // Detalhes da Integração
+          { 
+            path: ':id', 
+            name: 'IntegracaoDetalhes', 
+            component: () => import('@/pages/Integration/IntegrationDetails.vue'),
+            props: true,
+            meta: { 
+              requiresAuth: true, 
+              title: 'Detalhes da Integração',
+              permissionAny: ['gerenciar-integracoes', 'visualizar-integracoes']
+            }
+          },
+          // Editar Integração
+          { 
+            path: ':id/editar', 
+            name: 'IntegracaoEditar', 
+            component: () => import('@/pages/Integration/IntegrationForm.vue'),
+            props: route => ({ integrationId: parseInt(route.params.id) }),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Editar Integração',
+              permission: 'gerenciar-integracoes'
+            }
+          },
+          // Logs da Integração
+          { 
+            path: ':id/logs', 
+            name: 'IntegracaoLogs', 
+            component: () => import('@/pages/Integration/IntegrationDetails.vue'),
+            props: route => ({ 
+              integrationId: parseInt(route.params.id),
+              defaultTab: 'logs'
+            }),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Logs de Sincronização',
+              permissionAny: ['gerenciar-integracoes', 'visualizar-integracoes']
+            }
+          },
+        ]
+      },
 
       // Módulo: Gestão Acadêmica
       {
         path: 'academico',
+        meta: { module: 'academico' },
         children: [
           { path: '', name: 'admin.academico', component: ModuloBoasVindas, props: { modulo: 'Gestão Acadêmica' } },
           { path: 'grande-areas', name: 'admin.academico.grandeAreas', component: GrandeAreas },
           { path: 'areas-conhecimento', name: 'admin.academico.areasConhecimento', component: AreasConhecimento },
-          { path: 'cursos', name: 'admin.academico.cursos', component: Cursos },
-          { path: 'cursos-atos-regulatorios', name: 'admin.academico.cursosAtos', component: CursosAtosRegulatorios },
+          
+          // ========================================
+          // ✅ CATÁLOGO DE CURSOS (NOVO)
+          // ========================================
+          { 
+            path: 'catalogo-cursos', 
+            name: 'admin.academico.catalogoCursos', 
+            component: () => import('../views/admin/academico/CatalogoCursos.vue'),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Catálogo de Cursos',
+              permissionAny: ['gerenciar-academico', 'visualizar-catalogo-cursos']
+            }
+          },
+          { 
+            path: 'catalogo-cursos/:id', 
+            name: 'admin.academico.catalogoCursos.detalhes', 
+            component: () => import('../views/admin/academico/CatalogoCursoDetalhes.vue'),
+            props: true,
+            meta: { 
+              requiresAuth: true, 
+              title: 'Detalhes do Curso do Catálogo',
+              permissionAny: ['gerenciar-academico', 'visualizar-catalogo-cursos']
+            }
+          },
+          
+          // ========================================
+          // ✅ CURSOS (ATUALIZADO COM DETALHES)
+          // ========================================
+          { 
+            path: 'cursos', 
+            name: 'admin.academico.cursos', 
+            component: Cursos,
+            meta: { 
+              requiresAuth: true, 
+              title: 'Gestão de Cursos',
+              permissionAny: ['gerenciar-academico', 'visualizar-cursos']
+            }
+          },
+          { 
+            path: 'cursos/:id', 
+            name: 'admin.academico.cursos.detalhes', 
+            component: () => import('../views/admin/academico/CursoDetalhes.vue'),
+            props: true,
+            meta: { 
+              requiresAuth: true, 
+              title: 'Detalhes do Curso',
+              permissionAny: ['gerenciar-academico', 'visualizar-cursos']
+            }
+          },
+          {  
+            path: 'cursos/:id/atos-regulatorios', 
+            name: 'admin.academico.cursos.atos', 
+            component: () => import('../views/admin/academico/CursosAtosRegulatorios.vue'), // ✅ LAZY LOADING
+            props: true,
+            meta: { 
+              requiresAuth: true, 
+              title: 'Atos Regulatórios do Curso',
+              permissionAny: ['gerenciar-academico', 'visualizar-atos-regulatorios']
+            }
+          },
+          
+          // ✅ COORDENADORES DE CURSO
+          { 
+            path: 'coordenadores-curso', 
+            name: 'admin.academico.coordenadores', 
+            component: () => import('../components/Academico/CoordenadoresCurso/CoordenadoresCurso.vue'),
+            meta: { 
+              requiresAuth: true, 
+              title: 'Coordenadores de Curso',
+              permissionAny: ['gerenciar-academico', 'visualizar-coordenadores']
+            }
+          },
+          
           { path: 'disciplinas', name: 'admin.academico.disciplinas', component: Disciplinas },
           { path: 'curriculos', name: 'admin.academico.curriculos', component: Curriculos },
           { path: 'curriculos/:id/matriz', name: 'admin.academico.curriculo.matriz', component: CurriculoMatriz, props: true },
@@ -182,6 +342,56 @@ const routes = [
             meta: { requiresAuth: true, permission: 'gerenciar-acessos', title: 'Gestão de Acessos' }
           },
         ],
+      },
+
+      // ⭐ MÓDULO: GESTÃO DE ESPAÇO FÍSICO (COMPLETO)
+      {
+        path: 'espaco-fisico',
+        meta: { module: 'espacoFisico', requiresAuth: true },
+        children: [
+          { 
+            path: 'dashboard', 
+            name: 'espaco-fisico-dashboard', 
+            component: () => import('../views/EspacoFisico/Dashboard360.vue'),
+            meta: { title: 'Dashboard 360° - Espaço Físico' }
+          },
+          { 
+            path: 'predios', 
+            name: 'predios', 
+            component: () => import('../views/EspacoFisico/PrediosIndex.vue'),
+            meta: { title: 'Gestão de Prédios', permissionAny: ['visualizar-predios', 'gerenciar-espacos-fisicos'] }
+          },
+          { 
+            path: 'espacos', 
+            name: 'espacos-fisicos', 
+            component: () => import('../views/EspacoFisico/EspacosIndex.vue'),
+            meta: { title: 'Gestão de Espaços Físicos', permissionAny: ['visualizar-espacos', 'gerenciar-espacos-fisicos'] }
+          },
+          { 
+            path: 'reservas', 
+            name: 'reservas-espacos', 
+            component: () => import('../views/EspacoFisico/ReservasIndex.vue'),
+            meta: { title: 'Reservas de Espaços', permissionAny: ['visualizar-reservas', 'gerenciar-espacos-fisicos'] }
+          },
+          {
+            path: 'blocos',
+            name: 'blocos',
+            component: () => import('../views/EspacoFisico/BlocosIndex.vue'),
+            meta: { title: 'Gestão de Blocos', permissionAny: ['visualizar-blocos', 'gerenciar-espacos-fisicos'] }
+          },
+          {
+            path: 'andares',
+            name: 'andares',
+            component: () => import('../views/EspacoFisico/AndaresIndex.vue'),
+            meta: { title: 'Gestão de Andares', permissionAny: ['visualizar-andares', 'gerenciar-espacos-fisicos'] }
+          },
+          {
+            path: 'calendario',
+            name: 'calendario-reservas',
+            component: () => import('../views/EspacoFisico/Calendario.vue'),
+            meta: { title: 'Calendário de Reservas', permissionAny: ['visualizar-reservas', 'gerenciar-espacos-fisicos'] }
+          },
+        ]
       },
 
       // ⭐ MÓDULO: LOGS DE AUDITORIA

@@ -4,19 +4,54 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Instituicao;
+use App\Models\Campus;
 use App\Http\Requests\StoreInstituicaoRequest;
 use App\Http\Requests\UpdateInstituicaoRequest;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class InstituicaoController extends Controller
 {
-    public function index()
-    {
-        return Instituicao::with(['mantenedora', 'reitor', 'creator', 'updater'])->get();
+    /**
+     * Lista instituições
+     * ✅ ADICIONADO: Suporte para ?all=true (sem quebrar o comportamento existente)
+     */
+    /**
+ * Lista instituições
+ * ✅ CORRIGIDO: Usa razao_social e nome_fantasia (não existe coluna 'nome')
+ */
+public function index(Request $request)
+{
+    $query = Instituicao::with(['mantenedora', 'reitor', 'creator', 'updater']);
+
+    // ✅ NOVO: Suporte para ?all=true (retorna lista simplificada)
+    if ($request->get('all') === 'true') {
+        \Log::info('📊 InstituicaoController: Listando todas as instituições (all=true)');
+        
+        $instituicoes = Instituicao::select('id', 'razao_social', 'nome_fantasia', 'sigla', 'cnpj', 'mantenedora_id')
+            ->orderBy('razao_social')
+            ->get()
+            ->map(function($inst) {
+                return [
+                    'id' => $inst->id,
+                    'nome' => $inst->nome_fantasia ?: $inst->razao_social, // ✅ Prioriza nome_fantasia
+                    'sigla' => $inst->sigla,
+                    'cnpj' => $inst->cnpj,
+                    'razao_social' => $inst->razao_social,
+                    'mantenedora_id' => $inst->mantenedora_id,
+                ];
+            });
+        
+        return response()->json($instituicoes);
     }
+
+    // ✅ COMPORTAMENTO ORIGINAL: Retorna com relacionamentos completos
+    return $query->get();
+}
+
 
     public function store(StoreInstituicaoRequest $request)
     {
@@ -265,5 +300,24 @@ class InstituicaoController extends Controller
         $cleaned = preg_replace('/\D/', '', $cnpj);
         if (strlen($cleaned) !== 14) return $cnpj;
         return preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $cleaned);
+    }
+
+    /**
+     * Listar campi de uma instituição
+     * ✅ CORRIGIDO - Campus tem apenas 'nome', não 'razao_social' e 'nome_fantasia'
+     */
+    public function campi($id): JsonResponse
+    {
+        try {
+            $campi = Campus::where('instituicao_id', $id)
+                ->select('id', 'nome', 'endereco_completo', 'status')
+                ->orderBy('nome')
+                ->get();
+            
+            return response()->json($campi);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao listar campi: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

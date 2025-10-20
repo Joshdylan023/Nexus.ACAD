@@ -34,7 +34,8 @@
     },
     "files": [
         "app/Helpers/NotificationHelper.php",
-        "app/Helpers/DocumentHelper.php"
+        "app/Helpers/DocumentHelper.php",
+        "app/Helpers/IdentidadeVisualHelper.php"
     ]
 },
     "autoload-dev": {

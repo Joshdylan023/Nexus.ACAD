@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Traits\Auditable;
-use App\Traits\LogsActivity; // ← NOVO TRAIT
+use App\Traits\LogsActivity;
 
 class Colaborador extends Authenticatable
 {
-    use HasFactory, Auditable, LogsActivity; // ← ADICIONADO Auditable e LogsActivity
+    use HasFactory, Auditable, LogsActivity;
     
     protected $table = 'colaboradores';
     
@@ -34,12 +34,25 @@ class Colaborador extends Authenticatable
         'data_desligamento',
         'status',
         'foto_registro_rh',
-        'created_by', // ← Certifique-se de ter esses campos
+        'created_by',
         'updated_by',
+        
+        // ✅ NOVOS: Integração RH
+        'hr_integration_id',
+        'external_id',
+        'hr_metadata',
+        'synced_at',
     ];
 
     protected $hidden = [
         'password',
+    ];
+
+    protected $casts = [
+        'data_admissao' => 'datetime',
+        // ✅ NOVOS: Casts para integração
+        'synced_at' => 'datetime',
+        'hr_metadata' => 'array',
     ];
 
     protected $appends = [
@@ -57,7 +70,10 @@ class Colaborador extends Authenticatable
 
     public function getSetorNomeAttribute()
     {
-        return $this->setorVinculo?->setor?->nome ?? 'Não informado';
+        if ($this->relationLoaded('setorVinculo') && $this->setorVinculo) {
+            return $this->setorVinculo->setor?->nome ?? 'Não informado';
+        }
+        return 'Não informado';
     }
 
     public function getUnidadeLotacaoNomeAttribute()
@@ -123,6 +139,7 @@ class Colaborador extends Authenticatable
             'updated_at',
             'updated_by',
             'password',
+            'synced_at', // ✅ NOVO: Não logar sincronização
         ];
         
         $dirtyFields = array_keys($this->getDirty());
@@ -132,7 +149,7 @@ class Colaborador extends Authenticatable
     }
 
     // =========================================
-    // RELACIONAMENTOS
+    // RELACIONAMENTOS EXISTENTES
     // =========================================
 
     public function usuario(): BelongsTo
@@ -187,6 +204,18 @@ class Colaborador extends Authenticatable
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // =========================================
+    // ✅ NOVO: RELACIONAMENTO COM INTEGRAÇÃO RH
+    // =========================================
+
+    /**
+     * Relacionamento com Integração RH
+     */
+    public function hrIntegration(): BelongsTo
+    {
+        return $this->belongsTo(HRIntegration::class, 'hr_integration_id');
     }
 
     // =========================================
@@ -261,5 +290,61 @@ class Colaborador extends Authenticatable
     {
         $roles = $this->getRolesForInstituicao($instituicaoId);
         return in_array($role, $roles);
+    }
+
+    // =========================================
+    // ✅ NOVOS: MÉTODOS DE INTEGRAÇÃO RH
+    // =========================================
+
+    /**
+     * Marcar como sincronizado com sistema externo
+     */
+    public function markAsSynced(): void
+    {
+        $this->update(['synced_at' => now()]);
+    }
+
+    /**
+     * Verificar se foi sincronizado por integração RH
+     */
+    public function isSyncedFromHR(): bool
+    {
+        return !is_null($this->hr_integration_id);
+    }
+
+    /**
+     * Obter nome da integração que criou este colaborador
+     */
+    public function getHRIntegrationNameAttribute(): ?string
+    {
+        return $this->hrIntegration?->name;
+    }
+
+    /**
+     * Verificar se sincronização está desatualizada (> 24h)
+     */
+    public function isSyncStale(): bool
+    {
+        if (!$this->synced_at) {
+            return false;
+        }
+
+        return $this->synced_at->diffInHours(now()) > 24;
+    }
+
+    /**
+     * Scope para filtrar apenas colaboradores sincronizados
+     */
+    public function scopeSyncedFromHR($query)
+    {
+        return $query->whereNotNull('hr_integration_id');
+    }
+
+    /**
+     * Scope para filtrar por integração específica
+     */
+    public function scopeByHRIntegration($query, $integrationId)
+    {
+        return $query->where('hr_integration_id', $integrationId);
     }
 }

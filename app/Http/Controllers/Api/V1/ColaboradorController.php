@@ -595,5 +595,24 @@ public function organograma(Request $request): JsonResponse
     }
 }
 
+    /**
+     * Listar cargos únicos
+     */
+    public function cargosUnicos(): JsonResponse
+    {
+        try {
+            $cargos = Colaborador::select('cargo')
+                ->distinct()
+                ->whereNotNull('cargo')
+                ->where('cargo', '!=', '')
+                ->orderBy('cargo')
+                ->pluck('cargo');
+            
+            return response()->json($cargos);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
 
 }

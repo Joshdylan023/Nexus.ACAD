@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campus;
+use App\Models\Setor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,11 +14,40 @@ class CampusController extends Controller
     /**
      * Exibe uma lista de todos os Campi.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        // Garante que as relações corretas sejam carregadas
-        $campi = Campus::with(['instituicao', 'gerenteUnidade'])->get();
+        // Inicia a query com relacionamentos
+        $query = Campus::with(['instituicao', 'gerenteUnidade']);
 
+        // ⭐ FILTRO POR INSTITUIÇÃO
+        if ($request->filled('instituicao_id')) {
+            $query->where('instituicao_id', $request->instituicao_id);
+        }
+
+        // ⭐ FILTRO POR STATUS
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // ⭐ BUSCA POR NOME
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('nome', 'ilike', '%' . $request->search . '%')
+                  ->orWhere('endereco_completo', 'ilike', '%' . $request->search . '%');
+            });
+        }
+
+        // Ordenação
+        $query->orderBy('nome', 'asc');
+
+        // ⭐ RETORNAR TODOS OU PAGINADOS
+        if ($request->has('all') && $request->all == 'true') {
+            $campi = $query->get();
+            return response()->json($campi);
+        }
+
+        // Paginação
+        $campi = $query->paginate($request->per_page ?? 15);
         return response()->json($campi);
     }
 
@@ -71,5 +101,23 @@ class CampusController extends Controller
         $campus->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Listar setores de um campus
+     */
+    public function setores($id): JsonResponse
+    {
+        try {
+            $setores = Setor::where('entidade_tipo', 'Campus')
+                ->where('entidade_id', $id)
+                ->select('id', 'nome', 'sigla')
+                ->orderBy('nome')
+                ->get();
+            
+            return response()->json($setores);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

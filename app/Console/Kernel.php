@@ -7,17 +7,35 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    /**
-     * Define the application's command schedule.
-     */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // ✅ Sincronizar integrações RH automaticamente
+        
+        // A cada hora (hourly)
+        $schedule->command('hr:sync --type=colaboradores')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('Sincronização RH hourly concluída');
+            })
+            ->onFailure(function () {
+                \Log::error('Sincronização RH hourly falhou');
+            });
+
+        // Diariamente às 02:00 (full sync)
+        $schedule->command('hr:sync --type=completo')
+            ->dailyAt('02:00')
+            ->timezone('America/Sao_Paulo')
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        // Semanalmente aos domingos às 03:00
+        $schedule->command('hr:sync --type=estrutura')
+            ->weeklyOn(0, '03:00')
+            ->timezone('America/Sao_Paulo');
     }
 
-    /**
-     * Register the commands for the application.
-     */
     protected function commands(): void
     {
         $this->load(__DIR__.'/Commands');

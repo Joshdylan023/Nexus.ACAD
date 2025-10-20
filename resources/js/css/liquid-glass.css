@@ -1,0 +1,255 @@
+/* ================================
+   LIQUID GLASS THEME - GLOBAL STYLES
+   ================================ */
+
+/* Glass Card Base */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Filters Card */
+.filters-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+/* Form Controls */
+.form-control,
+.form-select {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white !important;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(102, 126, 234, 0.5);
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  color: white !important;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Select Options */
+.form-select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline-primary {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #667eea;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.btn-outline-primary:hover {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
+  color: white;
+}
+
+.btn-outline-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.btn-outline-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+/* Badges */
+.badge {
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* Alerts */
+.alert {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.alert-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  background: rgba(26, 26, 46, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-item {
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(102, 126, 234, 0.2);
+  color: white;
+}
+
+/* Modal */
+.modal-content {
+  background: rgba(26, 26, 46, 0.95) !important;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-backdrop {
+  backdrop-filter: blur(5px);
+}
+
+/* Table */
+.table {
+  color: white;
+}
+
+.table thead th {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Pagination */
+.pagination .page-link {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  border-radius: 8px;
+  margin: 0 0.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.pagination .page-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+.pagination .page-item.active .page-link {
+  background: rgba(102, 126, 234, 0.3);
+  border-color: #667eea;
+}
+
+/* ================================
+   TEXT COLORS - LEGIBILIDADE
+   ================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  color: white !important;
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500;
+}
+
+.form-check-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+small,
+.small,
+.text-muted {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Badges específicos */
+.badge.bg-warning {
+  color: #1a1a2e !important;
+  font-weight: 600;
+}
+
+.badge.bg-secondary,
+.badge.bg-info {
+  color: white !important;
+}
+
